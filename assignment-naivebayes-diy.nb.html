@@ -222,6 +222,8 @@ pre code {
 <ul>
 <li><a href="#business-understanding">Business Understanding</a></li>
 <li><a href="#data-understanding">Data Understanding</a></li>
+<li><a href="#data-preparation">Data Preparation</a></li>
+<li><a href="#modeling">Modeling</a></li>
 <li><a href="#evaluation-and-deployment">Evaluation and Deployment</a></li>
 </ul>
 </div>
@@ -241,656 +243,389 @@ library(e1071)</code></pre>
 <hr />
 <div id="business-understanding" class="section level2">
 <h2>Business Understanding</h2>
-<p>The chosen dataset for this NB classification is Fake News</p>
+<p>The chosen dataset for this testing is the Fake News. This dataset indicating sources that are reliable or unreliable.I will use Naive Bayes Classifer to identify which is fake news and which isn’t. I will count the amount of time a word appears in a headline - taking that this headline is from a fake news.Then afterwards find out the probability that the headline is fake, compare to a real one.</p>
 </div>
 <div id="data-understanding" class="section level2">
 <h2>Data Understanding</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxudXJsIDwtIFxcaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL0hBTi1NM0RNLURhdGEtTWluaW5nL2Fzc2lnbm1lbnRzL21hc3Rlci9kYXRhc2V0cy9OQi1mYWtlbmV3cy5jc3ZcXFxucmF3REYgPC0gcmVhZF9jc3YodXJsKVxuYGBgXG5gYGAifQ== -->
-<pre class="r"><code>```r
-url &lt;- \https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/NB-fakenews.csv\
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudXJsIDwtIFwiaHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL0hBTi1NM0RNLURhdGEtTWluaW5nL2Fzc2lnbm1lbnRzL21hc3Rlci9kYXRhc2V0cy9OQi1mYWtlbmV3cy5jc3ZcIlxucmF3REYgPC0gcmVhZF9jc3YodXJsKVxuYGBgIn0= -->
+<pre class="r"><code>url &lt;- &quot;https://raw.githubusercontent.com/HAN-M3DM-Data-Mining/assignments/master/datasets/NB-fakenews.csv&quot;
 rawDF &lt;- read_csv(url)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG4tLSBDb2x1bW4gc3BlY2lmaWNhdGlvbiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5jb2xzKFxuICBpZCA9IGNvbF9kb3VibGUoKSxcbiAgdGl0bGUgPSBjb2xfY2hhcmFjdGVyKCksXG4gIGF1dGhvciA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgdGV4dCA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgbGFiZWwgPSBjb2xfZG91YmxlKClcbilcbiJ9 -->
 <pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiXG4tLSBDb2x1bW4gc3BlY2lmaWNhdGlvbiAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tXG5jb2xzKFxuICBpZCA9IGNvbF9kb3VibGUoKSxcbiAgdGl0bGUgPSBjb2xfY2hhcmFjdGVyKCksXG4gIGF1dGhvciA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgdGV4dCA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgbGFiZWwgPSBjb2xfZG91YmxlKClcbilcbiJ9 --&gt;
-</code></pre>
-<p>– Column specification ———————————————————————- cols( id = col_double(), title = col_character(), author = col_character(), text = col_character(), label = col_double() )</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuaGVhZChyYXdERilcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-head(rawDF)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibnJvdyI6NiwibmNvbCI6NSwic3VtbWFyeSI6eyJBIHRpYmJsZSI6IjYgeCA1In19LCJyZGYiOiJINHNJQUFBQUFBQUFCdFY4eTVJY3laVWRobVJUTXpCeGhxYVp0Y3huTmdKTVdUVU45R082VzR0dUZKNUZOaDZHUWhQVFJ1UENNOEl6MDFFUjRVbjNpRW9rVEl0ZTZBK29oU2pyK1JUcE0vUUIvUVZhYXpIVU9mZTZSMFFtZ0NITnhyUlFHNG1xeW96d3gzMmUrM0IvZnU4ZlA3citqOWV2WGJ2MjQycy93ZjkvL0FGK3ZmYlR1ODl1M2Y3azlyVnJQL2tSL3ZvemZQTVgvUGthVC8wMWZ1RXpmOG5IcnVYL3Z2emYrdk9yL1BkWGY1NS8vanovL0p2eTVMV2Y2M3ZmY2NCdkhvVWhPWFBQdGVhT3I5MFg1aVgrOEhYM3czZS83ODM5SzllWkMrZk0zZEM2UFQ1SzVtdlg5eTZhYjdyZU4rWVhOb1hPM04zWTFjcjFiOHlMblhPOXE4MTVuMWY3RHcrKy92YkpreS9NSTk4ME51N04zY1ozZmVnVzVzeXZ6Y3ZRMnM3d2ZkdHVoMlJPekZsMHZsL2FXRjcvMjVlYnZlazN6cnlJUTc4eGovMTYwNXVIcmpmZmhzRTg4TkhWK2NFdmIzMWk3dm9yMzNqYkpmTkx6TVpWWU9tK1d6Zk9mSE9CdmNYVVIzL3B6Q043NWN5Wnc4Yk9hNGRkclB3NHpHL09vKzB3aE5uSjBsNVp6M0ZXSVpxVnIzb2ZPdHVZb2RzT3k4YW5EYjVKZmNDbTdESU1mWDRGbjNUNG9nK21kaFpMNXJ1MkhocVFiSjhuK2MrL3NOV2xkK1l4YVFmU2hLYlo3MEtvUVkraHFjM1g0VXIyMjI2Tlg1bEhXR3BvbHhqeVNZZ1k3NWNoT212d1NEUmZZeGdUVm5pV2V6N0RiREdFTnBrYjkxOVh6WkE4aHZrVkdCcHVIaEMyTUYvWDhyTjdOa2JYTk9icm9ScFMvdkN2N29FSURzdzlOUSthZmRmbGovL2QzZEFsTE1JUGJlZDI2YlFLYlhuaEZ5NGxYMW56YklpWFBwVngvdkpSMk5sWW0yZDRxUXY3bzlHZkRDa3Q3ZEFlaXVOZi81Zi9KK0pvenZibVlLc1V1NmRWSDVaNDk2TVBGK2IyaDdjK05SZkRNbFhSTDkzeFFQaWRVcGg2NFVwbjdyUXVZcitkZVJEaTVjSjgwOXVOdVdGOGE5Zk9WR0dJdlV0N1NHdTFzU1FqR096MkMyT3ZJRTUyQ1hFY3VoclRXbk1Ydk96SkoyeW5CWEZQenI0MWphOWNsOXhOYy8ybEI3L3ROalJoN1YyaVNQM1M4YU9uRFJZTldZTVdZVkhSR1o5TUIza0x3eEpTdUFteTFKY0I0bTZldWNoOVlNVXY5RFBJRjU3dU4vZ0h0TG44NGJ2ZlBUZzdCMzJqQXkwaXR0MWlKaUh1cVRtRFVOdXFDckdHRW5GNmEwYmVoQ3BpNVpXeFlOSEMrTjQwSVZ3bUxCNzZ0WFBHTmltWXl5N3N4dlVrVjRXdVB0bkpzclo1V2NsWXJxTnBUc21pZm9pUVk2cFN2N0hjQ1hndFM4SExYVzgyc3MzZGllOVd0c1U2VEtPY0J5SEMwRld5UnI3SDJiaXBIY2JtcXZnRmpZNXhMZWlmOUtIVzdnM1lESG13dmFycmtZVVMyWkkzTUh1RXVnbXhEVlJOQml3a1NFVTBNSks3c2xnbXRLTDFXQmpvV0JleDNUZ2JzNVVBcVZZeHRJWEdZTXNlTmdJQ0lSdS84aFpVN2ltMitoaU1DVldjTXp4M1luY29kZU1jQmhMbVkrdTZVM1A5RGtsSkNnbmhGNWwwWFZBRDk5WVErVVdRcjU0enRHeXdkVEE2TVpYSmxmSG5YUTltK2JYcktuRDlGMFB0S3crYUxXU1FweUJTRWdNOUk0RVFtNXl6ZkdrdlRJbnV5cnNkSjhrY0FVMDJ0c2Jua1B5KzJZTnVxYUtGdzZvaHVaQS9jQmtjU3RpdmwrWHNNVVhYVzA5TFd6VVd0a2UyQ01rSVVBemE2Vk9ZU3dvbEpyRXJTb21JZkphWUhjVUo1RjdNMW54M0pPbGRvUXhJZEdRRGtsUFpna0o2VUFxZVlDZjZCSTIyYnlEMVZFMlpSZGgzYXJKaW1WY0RKRjZYaGpXMklOemZ2Y2dpdXFHSVFqYTRqMHhvOTlxbm52VGxCM09KdGRzdHBRaDBnTnhDZ1hyc0h0dm9WYjE4ZCtWUzc5ZTYrYitEUjAyVXliQjFIUHY2RDkvOTErUHQzUGpxRlQrQXNHL2NodHk5T2RyRDI1OWxlM2o5NlVyTVdjS2laN0pWOUl4R3hGSXBsVEFWNXp6TmNzY3ZiTlVQRnM3TkpMc2YxUlBNUGhRQzJYVVdoQTRXaE56QTNuLzQ3bnZ3WU9pS2luTDBINzc3SjFpczNRYUc5WEE5UXBRNzJFcm85bkFZSUUwVUJVN3VkYzg1aERsUUxEaDlDR0xNdG0yN3RWRWxMZzBZRVd6dFlaeXhyMjR0bG1tRkRjeTBHSkxWcXlRV0lvcitxdldmcVJabDJUWXc3ZlhlWElXZG1oZmZRV2l3RWF3aVFpSzV3d09lSlhIMjJRYUJMZ2tiQmJVZ0haQ2VmaGZNSHR6SGg3K24xUFViVmJsdGdPZ3ZzWDdNU2lRRFg0QVZ0ckoxZVN4TFZYdHE3a3liSFVVQTVCcEk3Ym5GTEF1dkEra21MSWFMRXhpejhSajVkOUVsb0JrMXFxT3RFczR1bzNjcmpCK0RvQ2FPMnNuZXdCeThUODhZR2hBUTFyQ21BTmpHdjZIV3FrQllVdzgxek5nN3ZBN012OGY4NzNFK3JVOWM4aWhnV2NscDRUZEVla3NpUFM1R2FRbUtGQUtRbWdta0podXBZUmdPRTBLbEx6YWcxYklaM0dTL2xpQzEwRHpRNTg3cy95Z2VqdGhFeEZFdC9RUlJpcU5TU3ZlK2RXUXV4K3FhdWZVWGo2Zm1iZU9xUzlEbXhZNDJDZklLYlpodC9IazIwbytMa2Y0VGZCQ3RhNFlhaDhzYUJEa1ZLM25nSk82TzNnVlFtdHFnVHZCZldFbWVicHdOekQwZWY3U3YyZUpOTnBna2VVakQzN1UwYmM4cE5lMWttUmRISm15aHdxY2lSUHJ4L2RiV01xdnU0UlFXdzF5L0NOeHJOZ2ppUTNiZ3dPK3h2SFhJZGl4eUFhck8xSVM2QUNMNnV6UnB6Q1FBRDU4K2U0Y2J6cXkzV01ZcnZGMURKcHF3bGQySXRteERUejBWb3pqNkVmenVYbStiSUlqOXdDaW9sbmRFZlpoeVhFVW55cGp5U2lyQ1M3c2V3R3hhSHJIRUJZTDJzbk4rNXVPY2JYZ0FyanpDSkVDQ1p6THJlN0lhRHNqV2kwTXRGQ3Fwd21FQ29USU5DK0tpTEx3anZBR0hSckc5L2tJQTZtWm1XRlFkYlhQSkIrL0I3TzhSMDJRZnA2NERkaWE1Wm1XMk1WeGhRaGpUR2xKZE9jRXlWY1pEa3plZjJlTVpmeVlwVGd1elJtU29ucVlWOVpNTkFXMk91SDRMN3JTMmd1VjMyUmpRZkxRV2FKYVdiODNvREEvQ2ZnTUhMZ1doanNCYi9JVUIzbDNSUGZOZHNRUnBXSy9CeVF5MkJYU3JpNFF0RmwwQTR4Zi84aml6SVViaWlLbnM5dnF3YmhYZmRtWWRZYUJBUzk5QktyZU9ZaWJVWURoNmdsQjBCV2E4elA2M0RwQ1ZQRGpZQ1JjbCtOYVhpUW8xdmJqdzBkVHY3TDZBNTBzTWdEQU9ialJpQXNXUU9ibzZUOGtLN3RaZ29BMjFhd1JHd25GczRlZjhFa0Y2djVkM2xwNFM2Qk9ZdFBIYlV3YTdoK1pVRERnSlZ4TWJWaUxRZ21qM1IwRFYzRy84SzdqaHV3TlVVdHkzaUdNQ3paUlV3b1ZSelNEbEs5MExhYUVUOXRHMlcvaC8raXVMYUJiUkh0YUkrRlZXdjRLQ2Q0aHlGd2JXSWVnYk9jREpvNERBRDdFbzJDTUdSR0p0aUl4SWhXWi9STmtkSEgzZUhCeGNsM2JZQVFXTnF4UXlKTjhucFhyMFFObERBOStIVVdhMkdTQzVSd3hLTGxlYmtMSHlNNmhNVURRZVhmdWZGRm5UdDk0bFE1NWxZcHRmQmVIcU9jTFExOXpjOC85NCt4TzFOV3V1NlRHMDF6d1BpUEwzdEZsRDU1UFE4QjgrSS9Dc0JEMnI3YjZDUGVPOFFJdTNUODFqTENPTW9kSnNyZXE1WWFXQTVNbHBXUlNVRWh6bVBsY0RxSkdHN1JhUVphN09kQ1RiQnZFZGN6QjVEV0NocTcxQy9MTVNLazVNYkIyVE4xUzB6RlJxT1ZlekVWYkF5SXUzaElrNVVNT042Q0FCNHV0K1NWSzUxMWtZVnNyZ0tRYmkwcGNJWnRzU3hoL0VaVjBmQTZMWk95QmxIcE9STU4rK2tBRDRyYmk4TDNFNVhoS1JQY3hTWEM5L3l2SSsrdkJra3VoMXRQVkFSSmw1OFUzbnhaTkN0L0NKWm92dVdpekhkMWJDOElyYVJ3Nk1GdGFhVi9BVUhZQllHbGxLL0pNZ1Vib05ROHpiYnZ2Ull1SlZqYVp0MGJ6OEhsYnAxNTV4dWZoUzdrMDgwOW9wekFIRXJweXJWVTQ1bE9MTFBObzdSdmdQQWoyeHNJNS90VUJrSnllV25qYjYxSW9YdTd2QnI3Mms2N0E5VW9nQmcyWk1IQjlvUEJab3NaRkgrTEoyU1FCeVVNVTJ3emFyWEFCWE9jQ0VGbE5sVmFINE1NQ3NoR09kV2xkNHNZVHZCS3ZSZFF6eENuU3ZPYmRkYXRhdDMwVG5UZ2pZWVNwajlBZzVUaVZqU2FjaVJvUDdQbkIvTnMxMnc5d1hpUFRrTHFLcEI2RGg5RUoyck9hckxCWTVsVVVRQUMyQk1aQkFKei84d0ZaT2hQbVVTWTNxMG9pdllhdzBUTWt3QytpR0djeTMvSmZCbTR5anViaWYvL2Y3ekRPdWMrQzdjbUFRbUxhSHpJQzBLMmlaajFYajFMVkZ3bGkxdXNBWW8xOVNzQytXRFBiS2ltaGdGSzVEY29NYXZNSmRVVEpxUWgrTkdiNDB2ejdLeUVBK0VDVjJPdHZTcjNQQ0ZWOVVtajVtOUFoSHQxOFV2aU1TaEFBbVNiNDl0dkJMMVFZYTNQY3dzZHpZZmljRWdYdFNRNVpJSURpc05CbHRadFU2K1JqTEd0WkQxSGltaGk5TFdYcGNYbGV0cXNCbmE3dlhWZEpqUHZaNDlKRzlndjJ5TGQraHM2Vms1K0FDOGFGZ0xCbnoxSmdMaFBuaTJERFlRK1lIelgyWXZLclhLSEV4eG9qUFE4MEJhVzlYalVTWk9RTUI0Zm40TXcwWGpWMEhsZFJFL2pFRERqQWxNMUZpSi9vVVk4SjVKYUdpVUhpTEozMDlzL2RGbzhkMGhtclBXaGl1cW4zcjgwOC9ueEp4cVIvNFBseWg2ajdpR0tZcTNaS0dLMk1keVA0NUVTbHpLYWx5a1lrZGZ0aUhrajBFZUFWMkFPZ2d3M2Y2MVpMWkFIUGpVdkNucms0QXgxR0FzbzBlT3NqOHFicXBUeEV2ZG9PeXgwaTBuR0F6cUpSaWl6dkZIWXdHWWJFbDI4eDhERWlwTnZHbWhHTG5CcFNuQkpsMUk1QWJ6d3VmNzlRVzQ1VVlwR3BjZ1hMaVJPUzFWUGdyNGhNZ0srb21HdTRDQzJPcVJsYjM4WWNmNmtjTGJsU0d6enlYR0ZXZ1Axa0ZXMGp3a2IwWm5DaTBSV3dyVmswamY3OWU0NHN6RjljRTNxSEVZTEZoQ2FLQ2grZzNldzF0SHpPNTMrTGhpODdGckxVOVZkTkt2azlKQnNJbmtjZXFVWVpEZExwT0tBR3BTdWFHcFY3bkJUQm5Fc1Z5N255cVE2dTdDeElMYXpqK2k3RHB6TmV1NjZCVytzeE5MQkpHQy9zZHhxeWFpT0tWK0FhaEgyT0xlMWlINzUwNjQ1SklVaGszSWp0WUd3SmlLZHVVUElMdGk4Lzk1dFJjNEgrdUUwSDB0UERQNmFGaHBJWktZNi83dFZpb3M0amxFRkcwQW5YSXRpb3ljb01iMHIvQXZNSlFDQWZjSmRSaFQ2WVZDN0VPVmpFd1Fob3dDNEdsV0h3cWxJN0VQRWhQckYySjVqRXRNNW85cndZb0owRXdYUEtDWVM3czBKZzdlQ2hkN2sxakdXU3FncDAxTEF3OUN3U1ZOV3pUT2pBNDVIcklaSzZRZ1NkTlFZeGhMWkVWdjRpTzZwNkQwSjZaR243RjE4aUVUTFluYmdkdXJSQTJKTjk2R0NKYU1vaEtaZ0d0ZnlDdW1JRWkrQk1PMjBzV3oycVdDSk1oaXVycG1yR2VGM0ZBSU1LWnNvQjd5RXlPak1OUzB1K2phVm53aFJKU01Udk8rV2NGQStoWXVzelpKMUVQaWhvZFZuVE13aWVtYldkcFNNbTI3QVMxRzQwTGs5MFh2clVMV29PNDV6VENma0FHUE5FcXZSS2lZU3ptdjcxZ0xLdU9yNWVOYUhTYlA2Rlp5blU2K2RZc1E2NEtEcXAweFUvczFNSG05eVN5b3l3Y0RwV0h3RCtuQk1jUzBKSEdjTW15OEJLRWYvbStyK3pveFlWa2dQTXRvMXFDUzVnSGwvMmJya3UvMzlodHlnR3Eya1pCdlpCaGhNVEwvUXcrQVRKcFVJTFZ1ZnBMc3BNK2hPd2FWODBQczRVSGI1Znk1RUhGUlN3ME1ULzJma0VXamc4ak1IeHJEYk4xQnFMMWFYcXFUTEdKTHpjd0V6dU4zVjlFZ0x3Ry9pcmJzeXNyNW9LS3YvWFJWa0FLWjY1YmIrd2J2eGpaMDhJV1RlV0t4YWlabXJrcmRsYkMxR2tCVjBGeUZZQmhpT0NzbG5xaXk2bk9KbGp4V296VkkxUkhoaTlaUEg2WDdmU1NmN2d1d3dHYWdhbjZnS0RQdndra0ZLT05Nck9XamZqdVdLUE14QkhUcTNWbEI1ZWdIdVRqS2FURGxCL05Banhkekc4SFFqSmFvUmJ1bmdsc1pxNmlXS0tBSU9OS1lnQXRsaFZiS3hPcGdNaG1OUmRHM0J5NjBTUldETVIxV3lwQzAzWUtlWUVHcFJpcks3MnkzVzhIVnQyajhJVVdJSWVNVHEwcFZnSUdja3hMb1lON0U1TWlmNEMvOGdlTENpekZkMXAybFFUL1ltWVpMV1NCUUhGb2xBTFNkYURHa2F1bnRmb25rY3VWZGdhd3F2Z2E0dW9aZ3V6ZlNmWktkOGQ4RlZHSVZPNEZIWE5zTVg5M0ZJM2dFZWttRUhKaFIyMVFyRjFnZTEyQ0IySUZVRmNLcHd1MWVua3VMR01yWnA5WnhLN2svUWh0dEpUQm5jQ2oweDVOZWp1eVdDMmVWN01CMEhTcEl1ald2dXRHVmdFdksrQ0NKVUdVQXd4WGVkZnZoWWdFbVFHUk81Q2cyblV4dEdvNk5udEkxaEplUlduNE5hRWE4QjhBM2I2c1hrcTBoQ21URE1QaWZ6akR2RVV5d0dvc3p6R0dvN1dTT3Q5QzRvdHVUU1BKWE5JRGpyRkJ2SkdSbTNrSTFDUld3RHowc1JGYVRQajNiZ2EyTTc4MWdWOHNiSTRvVlFNUnFFMldvR1kycWtBTFlxakp0a002cWd6MUpia2lBZ3paWG9ONm1qS0JLMTEzZnNWSit3WUdpR1NVRXFXUUFVdlErQnlycVBad2l3dlZLcG9PaHNLaEs2YUJWYUpwUjB4T00zQ1Y1SE1CL2RDWlRkaWRtcGNzZjFNTUtEMDY0NGdnWktuZ251TFRvRVZVQ2ZrMGY2TnhNcXQzcmk3RUVBWGtib0VtaTV6azRwU2I3Q2hpZDZ5T0xLSVllNEh4Mnlpd3g3MXZwRmJCOG00cWdXYjBENHRVWmhpblV0bDZ3dXEzZlgrY21QTzNKdFIxK1c0WVZ5M09RbE05bVJPaDAxMHpDaWZtSGlMcmFFd2lxR0ZNNnBMbWEvaWViVXNzdDBrTzZ0eDg4cUVSV0k3Tk1SNytzaWlMUWhYUGxwWnRMNVpVS2kyUHdaMzhkUks3a2lTWHBLT05ZcWtobW01QU95TG9KWWZsVW1DV0dqMzRkQUN2QnFiSFJrNEtoMzNHMU9PRlhYa3B5SFZWZ3dBdEozN0ZRTkhQYXNBN2hpTEExQ3l6Z1lzd1J3dFZaMEVuRHhGTVM5SmFqRDNRRWVoeHY3aUJlMVlpY2FiUThXcEpISXl1OHBWdktHMkFnN1c0U2NrcWpNRXczL1hpazdra3FuVWsrSzhkRzV2b0pUUkQ4ZTlmL2RFR3NhbXEvWG1wYXBOdUNHdVNsaVpaUk9va0IxRmFHeUN3dHRtbmJEQW5qOHZmcWoyejM2SUZqTnAyRFBVbFoxUUcyZ0F0RWx0VDIxSXJzUzlIMGV3VEhRbkxwNkRuR05rMFdsWU93Q3FkdUFmb1pETUZOSXl6bzhoek5pL24wZjRXQ296UGRnZ2VRSjZ2N1M3S3N1L1pLMStMbTdwK3RuLzdZM1A5d1VHK3F4VmlxWHlMbURFNUFWT1U5Mm55UmhFWEVDTFdUUzZJTEFGUFlGR2hzOWdGMDVGa2xBeWxBMEkxWVE3cGM0b1ZYMGtPU3p5ekVOYm45SUpWUVJIL0JqTzUxK2FmRXFCQmNrR3ZDOFlOYVN5NndBaWx4R281MFNhZzA5S3kvRDFvNnBQaHhQVXptclU4QnF3Rk00L0FLK3ErYm4vNDRVY0xpRWVnazNuSkJITGFqSlg1a29zQ0pQUnFWRW5wVS9OVVczRG93UzloVjlVL1pFQ2dTU0N0bGNPYjVZaUNnWWR2cHlTSVZOdWlGbDFyejFST0FQY3VZSlFSNnp3YUlDa2VScGd2WjlSMUpWNFFrK1lDSW9mdkJrMG43SnpkQ2dFZ1ZIeGw0K3VwRkZTK0ZNT1pKT2RaNGxrbE9hdnVCWXFKajFtNmZTZ29tcm5WdFFZM1hnMURuWjNyaVhwV0F2TVM1a2JnZ2xac09yNmhiY2swZit6ckdpYjVQb0QxcVhrMit0QWpvbk9PWDlIc1QwL2NZNHJ5THZ3UmlGekt4NWp1NlJWVy9IUzE0c01TTzBxb0xTMVU1M2VtenJVOC9ndThqbm52TU90T1N5bVZWK1pXR1hTQ0toQ24xWXFBZWMvY2VHMXVNSzlJc2IxNWFtN01iTC9aYmtJZmJxckswREp0aHdnTFQwbmNPUzNmMEhoaStDZ3ArQzVqcFliekNERkZUUVh0YS9RV1N0WEF3a1FBY0lGR2hhV0MyZUNVTnhybFRDUVpTVVhoSTJLbVR5RGkwcEN0cXR3MjE2OFRsZ0kwRUNpRjBnM1I3TDlVUXdlSEgvdFNZOEtUTXVhdTFLbWcrNjdPeWJtRkxoSmIwTUs5d0F5TkNHMmpoVkJxaDRpYnFzYWRQaWRjQ0Y4WnRVU3ZvTGlrb3c5bHZFUTFuLy85clZzWmg0NGkvODNweFpqNVlPT0laRWtGTUtsYjBZSW9xVzNYaEtuendOcXhURXhMVnhKdnRhZThFTVJqeGloNUJOc2RJL1BGV0pKZStkZWkvNWptemdxeFgrY1pXZ281U2xXSzFVL2d0alVUME9DTFhXOXFXN3BWcE5IbFNEdlh0bDJ5Q3lFRzVpNWFvcnhWSEh5L0docDFvQkFHU3pucnA2aXdZOE1LWkhMY3poZ3JpVjZxRFN6dnljS1NXR1hXVGFTdEZDNmxFNVMzS01xb2paWmlEOXhyaVZqQWVIK1MyVUltUWlKdUNBaWY4MkU5Tm1HSXpkcmFmWVFKTnpjWHNJQ1VPS2NKcndQeHRQV1ZUL1FYbzlrck5OR3dSbXhqSEZ5cFErOVVaRFFlbGxsbjljSEsxbEdjVkhMYVpVZTR5UVl0cDl4a1dxdFQ4d1RhOXZyWmlCSzRyMFUyWTlJUlNDZU13UllIN1lRd0Q1WGZTbDVLNFNEMnpCYnFuZGdKb1JDVlBhcTZsellJMWt3RTVGdXREbTZkWWh2WTlCWnVJZk5malcxaTduTTlLendWNVpvUFlFYzZpY1ZnS2o5bVg4UTZFdFMzMFE1MHlCSWVQNVhRYWVkVFRtQVU3eXlBSTJvbkdWQWUvaHBhcWFod2dTSWR3bTNZaHdFQmZ0SU1DaHhMSjBUVW1zdU9VRXhZUWFSc0NRVktVZ2piME1TVmRMS0s2NG40NDBxYVBDN0NKRHBDOVY0UzJwcDBUejZOVWNYTXJ6L0pYVy9KQ1p0R3hTSG9FNHN1TUQreGswVUpReEtNbW5GQXQvSXFDTFNPRU9zYnVhbVlCcXhDVEN2WVRkc05wSmRhV2pmMW5adTUyME05L3ppekZpT2t0YVVUWTNibHRjRjRXb0IwYmpIaEVrZm9vT3BRQTdwNStiaGswbExRdkVmbGxEUXdNRFFkVHduMFk3VkJrTHZJeUVSR2FPelFWWnYzd0pFSk5ycXBLcFJ4aCswWGhqNUpwTHlxaHExK09aWnVCSVFzbEUyenplNWtzMm1JVE8zSW51ZGtWcmpZRGV6NHVERlAzRU9ycTh1dFovbVBpYXcvZ2M1dVRPTEpYejVta1p3cEtTMUNBdkoyVXVBVnRXNnlTK21salJHeUJ1K24wNXc1UktJK3NOQjNVWGt1T0JVUDg5eWxhbkRaQTE3Uk1jSXM1STNQY1Q1L1VFeEZ6YkhWU1A5RHlMZ0IwdTAwdjBuYnRtTDdSdzVrZ3dRbnR6N0tKYlpHRTR1YWFpbDlZeW4zb2ttM3FZSlZ1bnlZanJqUGxvUW5LVXJqMmcvZi9ZNTFqVXFTQUExekFCdnRhaFZ6TTdVRmNweDFqcmswcjVxUjEwSHNVaCs5c1hSOFB0TVJlRmFqQ1NhMUQxNWtueWR6VS9odUswbGs3ZmwxV2xTQVUyNjJhalpEVDlmTzlIVjJoemEyWHNVZ2RZd1FBcHZtWWQ2U3RBNUtJamlvQVhBNUUwRG9oaUNOZ0owcnpONktPU2MydmxQTTRBRW9VVFJrNG8wcjlrMXRhTkx1Ym14amwzNGhwZVVpM1NwSlR6SllZUmw3SGFWYnh3cG9wN2NFQVdKUkl3L0R1Q3J5VDQxYWhqVnJTL2dnN3dTd0dqcGdYajYreDlaNlVvQ3RTcDM2SnlGNnlvUmRFWGpXWS96SDFXUzRtdGMyWWxTMlpaUVZ6bHZwelkybjk1NmMzMlF1ajUzTlV2QVk4eUJWa0NhOFhKdGxpaWFPd0NENTE3MEdyMnJuaVJuZkwrVlRJbVpjeFIwbHMyNjVLTkhDM08vV0hveVBHckxWNXJGanAzL0g3bTROSXBJa1NITWZIb3ZDQUxuWjRnazJYanBOUVVpQndVcWorc0dHMmRPSm9LM2ZBNUFQTmVjL0M0QStwS3VneDd4bFYyeDYwblRFOTJuUy91V2svVWtYem5VNXNhaS9wckQ5SnNlanNNV3VXMHR0dHl2N1RxNGFJcWZYQnRGU1N0UW1zUlhJMjBzaVZBcXowaEJReXRLakcvdGppNUY2VzhXektiMTBPaW0vdHZ1WnpjbERhZjFKYklEMjJFbmNSeDNMYXBzaGxRaWNkanl5c1VJTlRvbHhTcThhQ1FZL00wUmxLU0w1UGVpM2hjdHdKWjlCMlpEQ256aGc3YUtTRE5aMHRnSU9RZmFmTXdRMFFoTDZzM1R2SmNFckJlRVpodFhBa2dGNXcrYVZmQ2hBOG5SYUpablNIZDR5ZFhUZTV3VGcyMDlrbE1TbnhINmZsYi9OZFgwcitYYmI3SFVLbU1BeDJVY3RHck9VeWJIWk0yUmN0RkFhdmtjNTloa29kNjRwUE9zbHVTN0FYVE16UW5SOHN4aGw0SjNXOWNWUnQrY1IwTGZxWjRZRVRtaVlMdUh5aVlNRGJVTDNMb3NNZlFTQ1pLQkRveEt6R291N2tNU3dRRnV0REV6TllSSXNNdXpaZ2lmUzJMb3VCVVJRbWJLV1pXcWhPNUhYSVV4OXYxZCs3N0xJclVNdVRiRzJ3RlIyUHVSMUVDZ3A0TDdZUjI4WHdLZkxQWDZjcDJnZFNQaU1qb0NIVldUWmJMYVJ0cHZUUDhFczV0Tm9EZk8rMGR6UU9GMnFxOWxxenlKbEd4a01QbDNhMWhaM01zc2M1SFNiTkJ1Y1FYbzcyODE2aGQ4MkMyeDBUa1c1VHMyTlo4d0dtQ3F5OWZDTG1Ybi9vM3U0bVZ1Z21WcGJVTVBJSXJyZUZmeXFTRWtycHFUNFRhbWpDRWVHcEdkbmhEUHN5MzVVK25ScGFzUXdNd013U1A0Qk9wNjIyU0N6KzVXMWNaVmE5c3ZxeWNPNUpMS2haZ0JSUFIyZ1NrUEpDbXBMUEovSXZTU2F3MlJNSWZrR0xiQ0JOQ2VhV2hvWXJVd3hHZ2VUQWtFeEZMMzBPSEFxVFIwVndacmhGMUd0V3BGYlNiMUM5NytXazFDNUlUUVNhRDYwd0tHUXFleFkzeTAxZCtVMFlDTXIyUk5rZE1wbHVHa0k3QnViYTEyc0owaE5URXFVenZYYVV5bW1xUGpYVzUrKzI1T2U4bXdDak9qWUc4L3pqZUo1Qkx0b3B6VEpIb0IzQzJEckJWSjZRWldOdUdQZGppQ3UybFVOZXc2bHZjRzg1UEVFV0lweWZGSFdvL1ZDV3V0ZC9scWFwNnVoa1N6blc4L3FIbWxEMGxnWFVlcXJXZGRXYm1jN3dPUnpxZmxOeFhiQm5hdzlsbDRKUHBkeWlWSXhxcGh3L1ZoR0tqVFRBdVF5QmpWZHl1Wit3d1cwckU4RDJZTk93M2FCV0VQN0ZRdDRQaFNpN04vRzVMdTRydHFOa1FYRGQ0aGprbGJ1MHRST3k3M3k2cnpIRDdBRVVrRmMvVVU1TGpmajZyRXBUUm1sK2pncTRhaG84N1ErdTBIRW9YV3VTTUZoNWx4VmNNTlVtbFQxbHcxQ0ppTktLTDBUV0JnRmJpdGFleW1xUDkvaEVpTmZqZ1pmOEJRQXVkZ0RCUUpTdUlad3NjZE9BMHJKWTRpME04Z1V4NmhuSURQY0FFdFZkRkpPNFdoS2ZjeTdDSE9jYkUwTTVoRkdtVklZQzVFT1RhWkp2bGNzV1RtWThJVWNoUWFDaS9zTXR5V0FMRTVCZGU2bFkyTmRCek95Wit1R0ZsalpnSEZoQVFuTm5RaVFiK1ZSQWJnZWJPcVNaREkwUkJJL28wTnB2NmVjRWl4UjdwbEZETWZ1N3BNN0tkbTZRQVROZjQrOFlEempySWJNMlgzeHFRdUo2c0VGY3c5NjNzbkpWeWtTRU1qZHVMaDNmdFBZUzh0a2NtUWxSc0lNUFF4YWtGcFJlbURqT25jc1VCUjNWcXM1WXlyU3ZSYWJHcVFIVzdwK1dkMW5sbURkTUd1V05jRklCWGlDbzVEUVJ0cEZOWmNtb3E1NVlHWmhtVmtTRFI3U2w5UU9VZVRNUDFJUmtTa3pXamt4V0JPKzZ5R3lQeEZlOHpoaks2bE5OZG1qVHNpYmRERnl1bkYrVmxpQ3BIN2VGS1V3OEdXV3luRjljbkpFVXMzQ2VLWXJheDR5eUFyV3NXZHRkOEppcEt1WjdDeStZQVNOSThrT3FuV3ExeERSQ1plS0tERS83SmxXWDViZEhObVlOTFRidnBCS2pZSzJsWEdhZysrRjlTV3RWcHlzYTFZblZlaFdPYUZTT3M2b2NoSkJnMGsxK3pOUzR3bHlFS2syWVN0blNjNzE2TWFHNEVkdWxORGp0bnRtK01Xd2xBem4xRVloOEN6alU0MWV4RE5KeGs4Q1BHWTEyRDhabmRhaUhQdGZjOE8xS1hYLzRxQzNscjFzWG1BUWEwRmlQNThPMGJCOWtPaW9ZYXd5YUhlZGRtNTdEVnRMSUNFNEFQQkRHa1VrTGlUUm1GR3pXMXNSWjVFVFVNbEx0VFp6UUNIVndCVjVCalU2TmQvbUh2UWp1RHczM1pmT2JjVjJaN3Ztb3g3dmg4NytNUXR1Njl5OW5Tc3hqOENEWERaRVBDajlRazJ1T1AvYi95RjNhaVR6cjd4d1JBTnBXVkNmNC81cUhHNktLeTUxWURpTDBXVFlNcTRFeFRNY3JtSFhUcHBlU3BTWTJ4eTE5L25qTVRIRTlmRnpCTVoyclMwSUxNWmVNZDNRTHRreHVjMjlnR3hKTndwL0EyOGphUnJwSEpDV09FS3lIUDZ3VFkwRkZPbXp4ZUF0RDNsSm03cXpCTzkxMUh6VHdYcVgrMXlQdTFnRDM1NUZubjE0NE9KNlFDajI5eEtxZ1lhOFlvUEpIdzBGSVJ4MnlHZHc1TGlsNnJCWHV1N0psWW1NbVhoNitHRGtpeTRscytab1JRMHpteTIyc1JuTnlOTExPVGxzVVkxTkdWNVBRRERWT28ybWZjUmlFN1hMS2hkVkhqdmdPeDVkdU9DeUhtQUJ2WGNNMFlHNnQ5S2djZVB4eFlPYk9uM3VWOGc3eG9LbG1xeW5YSmtmNVRFaXFNblU1U0ZIT1U4a3FPZlJHR2t1MGZXVUJOMTVhaXlUYVZKTU56Zk9MMjRDSlFFRHFtV1VVMWdDVTU1WXlFT2szNVN6bHhLRFVqRkhib2RacTRxNS9WazVnc1UwNGV1ZVhSdnZTdkZMSjNldGgzTUtvSXAyNjJzTlpMVkl3bllhN1ZVYUx3c1l5Y3BkWjE0ZThGZnQzeXN4R0xjK3lqMnorU2hQUFIxS2tHWit1ZUpBa2t1dWNVdFZQTllybHlDK280OFdpNGdBbUllY3BMeU1JTWMzNjZpWHV1REZ4NjZxN0tFY3lxRUU3UzFuRjA1bnlhWkg5cFUzejYzUFRzZEtQODNZR2dCalA1Mlp5b3NTbk03dldlYnIyVHozeU9tTDJHNXVqcE1NZFNZQzkzM3I4N0xmVElGOEkwQTVNNnNHc0pNSStrYWpOUmo0eUxEVFZIelpnUmFvc3hKTldVUndDTDZVQ3BWZElnUzJ6Mm5DS1ZTc1BkZDZuWHVWby9SeVlGblNzcTFOK2NRNyt3Y3FBUkZzd3RNdUIyMXQxSVQrblJ5ZHRjd2ozRm5XUXdNQ1h2cDJRWVhycFFRMnRsOGtMUkRORkN6UFBsS1pmTys0azZ2UVhLazRpUUNmWCtRbW5JNm10K2hVOXRuNHN0eDJ3dmV2ZkJMeDVZektvSHg5d1NTUkk0TyswTk1nQjczSmNrQkI4UW9KSlhsK0tSU0dmTHBVd0FuYmhPUnN0bTM0bXpZOGpJZVVlUng1cjdOcmhwSXNrd3VsaEhyRGRQRkhNVThDTXVSSXpuc04xV2dFUjFmeWJpUDRYaXQyOFdBeVdIam5sd0E3dzVzRG8xVlMyRVZRUzdIbzQ5dDUvMWwvSmtPVGx6Qy9SMFJxYStCUjZWUU5NdHhNN3c4YjVpWnBWbEJqZXl2eFFpVk5FaHJvSjBWSStQbnhzUUdSUWlXTGRBM0VPYVlEUlpQakhrQTNSd1I3eS9GeW5JdlFBb2pZSEZiVGhXaElOdG5MVzUvUnBsZ3Y2bDlHeWpNNUNjbDFURVd1bEY2NXVNa0NobHlHZlBVQ2tKT1FIeU44RThPYnRmU3BRdVhwSVVHeVY2NlhoaTEyUmJNMVFHTlBIVTh2bFpDVXprS20xY1NlSzRuRlJaRnpOWUlsdHlFMktiZDU2Qkh1V2s4bVlEVVo2dXV0TjlMSEtXNVRUMU5KWkFiMTRMMVVnR3k5M2M0OEV4K1QwZ0VQek1xeFZYdVFvTnJQZ3VkUmtLTlU5Y2E4TVBZcko2SDZ5Wnk5NVNKblhxUTRROG9HYk9UQUl6bllWazV2NXV0VU5MdEZxMk5GeFRKSHBIcWJONjJYUWhXVjE0b2ZBYWEyMktyZXNKbllqbUhEVzJ5ZFl6dVdsMVR1M1hTU1RTRUk1VnlsYWdFaTlQNk5ZM0Vmdk9tNTkxVmoxMlA3RElzYzVIMSt2K1BwM3hOdFQ2TG02Sm5naDdhcDdEN2t1emhBSzIyM0pwQlFVSlExYnJ3NlplamthS2JHcDh4RnFyRGV2cDNYTldrTnlUZnExZGo5UUxLekVoMmpkdGZJU25tUWhraWhPRVRGaGFORllPalRhYk9CaE9JNkVjZlBaR1FwWHM0VUxncVN0VVUrczMxWG5lOVlJZWhPRk5DTzFXV0JqWVh5NTMzQnpMTnJOMHFyd3lRNjZXQ0JlazJKa2pKTDR2OGZPUDRKS0s5QnpJLy81elBJZlEvSjY4emhqWWNqc21iaW15R3IxTjZUZjUycjNhd0NhTk81Q2hIZkZyUDczTUhsRGlJcFFQMFBCOWFpTkYyUXoyOXNRajQzcGRVZVMrM1I0OG5hZXpoZTZHVm5keTFxNjFEYU1GNnRwZCsxbjEyeW9rc21FaUVOam01ZWZPditFbWZ1SXdLRW9lRmFtV1hraFEyaGllRnlZKzRERVc1ODY3a2ZYalR6MFNlTEVqN3Y2RDIxbEZiYWdJVUEyTklkRExkaHE1QmJienhlK25SUkRxS3poS3VtNU5ibmVoQThVNjJRVlZJY0tocEFUQVAzRWZWMkF1R2ZUOW5lNTlNSUVxQVh1MzdLKzd5K2YxbEU0Q0NYeWFMcWRHSGNXeXhKZW82TmlCVTZLWTE3NE15UWxwSXRGTHNiN1F3L1dxYVlCVWJSWUJOS1pjcmo5YkZvT2ZLMDVzMVdHcmJuUXJxdzlwQzQydldsbkN6VkRpT0o3TVpwRkpBMytIUzYrazdBVGFva3c1Y24wYjZ4K2YyYjVMOGNGUWl0VmczZXZvQlQ4dy9TV2pqZTRia29IMml4UnlVSXhnTWNmdS95NUd5TEpxUHlRU0xwY0I3OURSY2xMVXBzbHJEcjBNbjVEWVg1dldnRSs5WWdoRWRMNTIwVHNucTlXYUtFYlkzZEhXd2pweUorOHIvT1JRTG9NWE5iQ1UrZThKcWs2WDdSSXNhL0NybGs5VHlmWlBxMXZEemVBOGtEWE9PMW9WWGo5WEtFOGRwUUh2eWNSdVlGZllNY0o1SDBTU2puYjhWcmpwZFB5RldsR3Bia1ExSjZpbUxXOGtzbHIvT2hORzI2Mm1WOFh4b3Z4L3NIeXlXcGpWdjFPY09VRC9GMldrb0x4ZU9JTHpnMUFzMTVNb2JGRmFubk1kc0VzeWdRVzlVTDZ0cU1yVkZqNjhMU2JieDBOYlpUalZzT2dpNURuWi9LdDVmTllnNXRpWitPVG80Qm45UlROdGtNMVVHRUt0TVJvYTdVWnI2Ly96cTM4aDd2VlB1bXdCN01TUnpXY1RFSUM3U2lnemQvTGNUN3pSSDFoRWpqVlN6NS9aV2tsaEVQTU5VNVhoUWhnUUhQeFBkNkt3NWpDcjF3VmlJUkxXamx4Z050SEovdm9EQldkaUdIdW82VGZ6eVVsZGF1MDY1TGo1QW5MejZQSUJla2tCRFRwVGxzUnR0S1dsWW9PVkZFWTNlTlJNZUxnb3FrQ0NIMGtxK01QTGd6eWVxTHMxMTUxK1EwYW9ibnFzWjdoZnkrV3cxUnpnSEkvall6N3B4bEdSZzdJdlJDRTI2d2dicVUrK09PYnFFWmIya2FtOWUwVURXK1hHZlVkOFhqempTeUM3bkpvL0U4MFo4YjYvKzI4Si9JUlhNR2RydjFMdld6TTM4aXlYcUhqTlM0MkdtMm1NdVkyV2pDbDdYZGN0RlVnY05IMUUyanhPWHIwWUNHcFNtN1JKRzU1VWMwaGdmSldNM1RxZlJTT1VaZHZWb1FTYW96ZjVndk1UbTYrSGQyb2NrWDVxdjZUVGRkQ0N6M1dwZjdySS92dHo3K09mMTNjRkgyQjVMOHlMY0xmNUEvL0pFdlZ6MS8wUHUrY2ZtUG45cUIzWC81cjUvd0dxRHlXR09YcmprYStpOWkySjJXNFgvR1liL0RQMy80d3gvK3ovRWFwRmFRMTFBK3ZNNFE5WFFWQlk1ZCsrZWpWLzVOMEhvQ0JpMjNmTTlmL3JONDlNRmZEWjNrblU2cXpkQmRudHptQlBLMS92ZXovUHRQWjc5L29GUCs2QTlIeFBtcGs3NnZ3NTNucTV5eFk5bndLYlBpaFRqWDhXazY3ZUhqeW5QWHE5Q1VUMlJ2MS83NS93Sm1PWnlsM1Z3QUFBPT0ifQ== --&gt;
-
-&lt;div data-pagedtable=&quot;false&quot;&gt;
-  &lt;script data-pagedtable-source type=&quot;application/json&quot;&gt;
-{&quot;columns&quot;:[{&quot;label&quot;:[&quot;id&quot;],&quot;name&quot;:[1],&quot;type&quot;:[&quot;dbl&quot;],&quot;align&quot;:[&quot;right&quot;]},{&quot;label&quot;:[&quot;title&quot;],&quot;name&quot;:[2],&quot;type&quot;:[&quot;chr&quot;],&quot;align&quot;:[&quot;left&quot;]},{&quot;label&quot;:[&quot;author&quot;],&quot;name&quot;:[3],&quot;type&quot;:[&quot;chr&quot;],&quot;align&quot;:[&quot;left&quot;]},{&quot;label&quot;:[&quot;text&quot;],&quot;name&quot;:[4],&quot;type&quot;:[&quot;chr&quot;],&quot;align&quot;:[&quot;left&quot;]},{&quot;label&quot;:[&quot;label&quot;],&quot;name&quot;:[5],&quot;type&quot;:[&quot;dbl&quot;],&quot;align&quot;:[&quot;right&quot;]}],&quot;data&quot;:[{&quot;1&quot;:&quot;0&quot;,&quot;2&quot;:&quot;House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It&quot;,&quot;3&quot;:&quot;Darrell Lucus&quot;,&quot;4&quot;:&quot;House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It By Darrell Lucus on October 30, 2016 Subscribe Jason Chaffetz on the stump in American Fork, Utah ( image courtesy Michael Jolley, available under a Creative Commons-BY license) \\nWith apologies to Keith Olbermann, there is no doubt who the Worst Person in The World is this week–FBI Director James Comey. But according to a House Democratic aide, it looks like we also know who the second-worst person is as well. It turns out that when Comey sent his now-infamous letter announcing that the FBI was looking into emails that may be related to Hillary Clinton’s email server, the ranking Democrats on the relevant committees didn’t hear about it from Comey. They found out via a tweet from one of the Republican committee chairmen. \\nAs we now know, Comey notified the Republican chairmen and Democratic ranking members of the House Intelligence, Judiciary, and Oversight committees that his agency was reviewing emails it had recently discovered in order to see if they contained classified information. Not long after this letter went out, Oversight Committee Chairman Jason Chaffetz set the political world ablaze with this tweet. FBI Dir just informed me, \&quot;The FBI has learned of the existence of emails that appear to be pertinent to the investigation.\&quot; Case reopened \\n— Jason Chaffetz (@jasoninthehouse) October 28, 2016 \\nOf course, we now know that this was not the case . Comey was actually saying that it was reviewing the emails in light of “an unrelated case”–which we now know to be Anthony Weiner’s sexting with a teenager. But apparently such little things as facts didn’t matter to Chaffetz. The Utah Republican had already vowed to initiate a raft of investigations if Hillary wins–at least two years’ worth, and possibly an entire term’s worth of them. Apparently Chaffetz thought the FBI was already doing his work for him–resulting in a tweet that briefly roiled the nation before cooler heads realized it was a dud. \\nBut according to a senior House Democratic aide, misreading that letter may have been the least of Chaffetz’ sins. That aide told Shareblue that his boss and other Democrats didn’t even know about Comey’s letter at the time–and only found out when they checked Twitter. “Democratic Ranking Members on the relevant committees didn’t receive Comey’s letter until after the Republican Chairmen. In fact, the Democratic Ranking Members didn’ receive it until after the Chairman of the Oversight and Government Reform Committee, Jason Chaffetz, tweeted it out and made it public.” \\nSo let’s see if we’ve got this right. The FBI director tells Chaffetz and other GOP committee chairmen about a major development in a potentially politically explosive investigation, and neither Chaffetz nor his other colleagues had the courtesy to let their Democratic counterparts know about it. Instead, according to this aide, he made them find out about it on Twitter. \\nThere has already been talk on Daily Kos that Comey himself provided advance notice of this letter to Chaffetz and other Republicans, giving them time to turn on the spin machine. That may make for good theater, but there is nothing so far that even suggests this is the case. After all, there is nothing so far that suggests that Comey was anything other than grossly incompetent and tone-deaf. \\nWhat it does suggest, however, is that Chaffetz is acting in a way that makes Dan Burton and Darrell Issa look like models of responsibility and bipartisanship. He didn’t even have the decency to notify ranking member Elijah Cummings about something this explosive. If that doesn’t trample on basic standards of fairness, I don’t know what does. \\nGranted, it’s not likely that Chaffetz will have to answer for this. He sits in a ridiculously Republican district anchored in Provo and Orem; it has a Cook Partisan Voting Index of R+25, and gave Mitt Romney a punishing 78 percent of the vote in 2012. Moreover, the Republican House leadership has given its full support to Chaffetz’ planned fishing expedition. But that doesn’t mean we can’t turn the hot lights on him. After all, he is a textbook example of what the House has become under Republican control. And he is also the Second Worst Person in the World. About Darrell Lucus \\nDarrell is a 30-something graduate of the University of North Carolina who considers himself a journalist of the old school. An attempt to turn him into a member of the religious right in college only succeeded in turning him into the religious right&#39;s worst nightmare--a charismatic Christian who is an unapologetic liberal. His desire to stand up for those who have been scared into silence only increased when he survived an abusive three-year marriage. You may know him on Daily Kos as Christian Dem in NC . Follow him on Twitter @DarrellLucus or connect with him on Facebook . Click here to buy Darrell a Mello Yello. Connect&quot;,&quot;5&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;1&quot;,&quot;2&quot;:&quot;FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart&quot;,&quot;3&quot;:&quot;Daniel J. Flynn&quot;,&quot;4&quot;:&quot;Ever get the feeling your life circles the roundabout rather than heads in a straight line toward the intended destination? [Hillary Clinton remains the big woman on campus in leafy, liberal Wellesley, Massachusetts. Everywhere else votes her most likely to don her inauguration dress for the remainder of her days the way Miss Havisham forever wore that wedding dress.  Speaking of Great Expectations, Hillary Rodham overflowed with them 48 years ago when she first addressed a Wellesley graduating class. The president of the college informed those gathered in 1969 that the students needed “no debate so far as I could ascertain as to who their spokesman was to be” (kind of the like the Democratic primaries in 2016 minus the   terms unknown then even at a Seven Sisters school). “I am very glad that Miss Adams made it clear that what I am speaking for today is all of us —  the 400 of us,” Miss Rodham told her classmates. After appointing herself Edger Bergen to the Charlie McCarthys and Mortimer Snerds in attendance, the    bespectacled in granny glasses (awarding her matronly wisdom —  or at least John Lennon wisdom) took issue with the previous speaker. Despite becoming the first   to win election to a seat in the U. S. Senate since Reconstruction, Edward Brooke came in for criticism for calling for “empathy” for the goals of protestors as he criticized tactics. Though Clinton in her senior thesis on Saul Alinsky lamented “Black Power demagogues” and “elitist arrogance and repressive intolerance” within the New Left, similar words coming out of a Republican necessitated a brief rebuttal. “Trust,” Rodham ironically observed in 1969, “this is one word that when I asked the class at our rehearsal what it was they wanted me to say for them, everyone came up to me and said ‘Talk about trust, talk about the lack of trust both for us and the way we feel about others. Talk about the trust bust.’ What can you say about it? What can you say about a feeling that permeates a generation and that perhaps is not even understood by those who are distrusted?” The “trust bust” certainly busted Clinton’s 2016 plans. She certainly did not even understand that people distrusted her. After Whitewater, Travelgate, the vast   conspiracy, Benghazi, and the missing emails, Clinton found herself the distrusted voice on Friday. There was a load of compromising on the road to the broadening of her political horizons. And distrust from the American people —  Trump edged her 48 percent to 38 percent on the question immediately prior to November’s election —  stood as a major reason for the closing of those horizons. Clinton described her vanquisher and his supporters as embracing a “lie,” a “con,” “alternative facts,” and “a   assault on truth and reason. ” She failed to explain why the American people chose his lies over her truth. “As the history majors among you here today know all too well, when people in power invent their own facts and attack those who question them, it can mark the beginning of the end of a free society,” she offered. “That is not hyperbole. ” Like so many people to emerge from the 1960s, Hillary Clinton embarked upon a long, strange trip. From high school Goldwater Girl and Wellesley College Republican president to Democratic politician, Clinton drank in the times and the place that gave her a degree. More significantly, she went from idealist to cynic, as a comparison of her two Wellesley commencement addresses show. Way back when, she lamented that “for too long our leaders have viewed politics as the art of the possible, and the challenge now is to practice politics as the art of making what appears to be impossible possible. ” Now, as the big woman on campus but the odd woman out of the White House, she wonders how her current station is even possible. “Why aren’t I 50 points ahead?” she asked in September. In May she asks why she isn’t president. The woman famously dubbed a “congenital liar” by Bill Safire concludes that lies did her in —  theirs, mind you, not hers. Getting stood up on Election Day, like finding yourself the jilted bride on your wedding day, inspires dangerous delusions.&quot;,&quot;5&quot;:&quot;0&quot;},{&quot;1&quot;:&quot;2&quot;,&quot;2&quot;:&quot;Why the Truth Might Get You Fired&quot;,&quot;3&quot;:&quot;Consortiumnews.com&quot;,&quot;4&quot;:&quot;Why the Truth Might Get You Fired October 29, 2016 \\nThe tension between intelligence analysts and political policymakers has always been between honest assessments and desired results, with the latter often overwhelming the former, as in the Iraq War, writes Lawrence Davidson. \\nBy Lawrence Davidson \\nFor those who might wonder why foreign policy makers repeatedly make bad choices, some insight might be drawn from the following analysis. The action here plays out in the United States, but the lessons are probably universal. \\nBack in the early spring of 2003, George W. Bush initiated the invasion of Iraq. One of his key public reasons for doing so was the claim that the country’s dictator, Saddam Hussein, was on the verge of developing nuclear weapons and was hiding other weapons of mass destruction. The real reason went beyond that charge and included a long-range plan for “regime change” in the Middle East. President George W. Bush and Vice President Dick Cheney receive an Oval Office briefing from CIA Director George Tenet. Also present is Chief of Staff Andy Card (on right). (White House photo) \\nFor our purposes, we will concentrate on the belief that Iraq was about to become a hostile nuclear power. Why did President Bush and his close associates accept this scenario so readily? \\nThe short answer is Bush wanted, indeed needed, to believe it as a rationale for invading Iraq. At first he had tried to connect Saddam Hussein to the 9/11 attacks on the U.S. Though he never gave up on that stratagem, the lack of evidence made it difficult to rally an American people, already fixated on Afghanistan, to support a war against Baghdad. \\nBut the nuclear weapons gambit proved more fruitful, not because there was any hard evidence for the charge, but because supposedly reliable witnesses, in the persons of exiled anti-Saddam Iraqis (many on the U.S. government’s payroll ), kept telling Bush and his advisers that the nuclear story was true. \\nWhat we had was a U.S. leadership cadre whose worldview literally demanded a mortally dangerous Iraq, and informants who, in order to precipitate the overthrow of Saddam, were willing to tell the tale of pending atomic weapons. The strong desire to believe the tale of a nuclear Iraq lowered the threshold for proof . Likewise, the repeated assertions by assumed dependable Iraqi sources underpinned a nationwide U.S. campaign generating both fear and war fever. \\nSo the U.S. and its allies insisted that the United Nations send in weapons inspectors to scour Iraq for evidence of a nuclear weapons program (as well as chemical and biological weapons). That the inspectors could find no convincing evidence only frustrated the Bush administration and soon forced its hand. \\nOn March 19, 2003, Bush launched the invasion of Iraq with the expectation was that, once in occupation of the country, U.S. inspectors would surely find evidence of those nukes (or at least stockpiles of chemical and biological weapons). They did not. Their Iraqi informants had systematically lied to them. \\nSocial and Behavioral Sciences to the Rescue? \\nThe various U.S. intelligence agencies were thoroughly shaken by this affair, and today, 13 years later, their directors and managers are still trying to sort it out – specifically, how to tell when they are getting “true” intelligence and when they are being lied to. Or, as one intelligence worker has put it, we need “ help to protect us against armies of snake oil salesmen. ” To that end the CIA et al. are in the market for academic assistance. Ahmed Chalabi, head of the Iraqi National Congress, a key supplier of Iraqi defectors with bogus stories of hidden WMD. \\nA “partnership” is being forged between the Office of the Director of National Intelligence (ODNI), which serves as the coordinating center for the sixteen independent U.S. intelligence agencies, and the National Academies of Sciences, Engineering and Medicine . The result of this collaboration will be a “ permanent Intelligence Community Studies Board” to coordinate programs in “social and behavioral science research [that] might strengthen national security .” \\nDespite this effort, it is almost certain that the “social and behavioral sciences” cannot give the spy agencies what they want – a way of detecting lies that is better than their present standard procedures of polygraph tests and interrogations. But even if they could, it might well make no difference, because the real problem is not to be found with the liars. It is to be found with the believers. \\nThe Believers \\nIt is simply not true, as the ODNI leaders seem to assert, that U.S. intelligence agency personnel cannot tell, more often than not, that they are being lied to. This is the case because there are thousands of middle-echelon intelligence workers, desk officers, and specialists who know something closely approaching the truth – that is, they know pretty well what is going on in places like Afghanistan, Iraq, Syria, Libya, Israel, Palestine and elsewhere. Director of National Intelligence James Clapper (right) talks with President Barack Obama in the Oval Office, with John Brennan and other national security aides present. (Photo credit: Office of Director of National Intelligence) \\nTherefore, if someone feeds them “snake oil,” they usually know it. However, having an accurate grasp of things is often to no avail because their superiors – those who got their appointments by accepting a pre-structured worldview – have different criterion for what is “true” than do the analysts. \\nListen to Charles Gaukel, of the National Intelligence Council – yet another organization that acts as a meeting ground for the 16 intelligence agencies. Referring to the search for a way to avoid getting taken in by lies, Gaukel has declared, “ We’re looking for truth. But we’re particularly looking for truth that works. ” Now what might that mean? \\nI can certainly tell you what it means historically. It means that for the power brokers, “truth” must match up, fit with, their worldview – their political and ideological precepts. If it does not fit, it does not “work.” So the intelligence specialists who send their usually accurate assessments up the line to the policy makers often hit a roadblock caused by “group think,” ideological blinkers, and a “we know better” attitude. \\nOn the other hand, as long as what you’re selling the leadership matches up with what they want to believe, you can peddle them anything: imaginary Iraqi nukes, Israel as a Western-style democracy, Saudi Arabia as an indispensable ally, Libya as a liberated country, Bashar al-Assad as the real roadblock to peace in Syria, the Strategic Defense Initiative (SDI) aka Star Wars, a world that is getting colder and not warmer, American exceptionalism in all its glory – the list is almost endless. \\nWhat does this sad tale tell us? If you want to spend millions of dollars on social and behavioral science research to improve the assessment and use of intelligence, forget about the liars. What you want to look for is an antidote to the narrow-mindedness of the believers – the policymakers who seem not to be able to rise above the ideological presumptions of their class – presumptions that underpin their self-confidence as they lead us all down slippery slopes. \\nIt has happened this way so often, and in so many places, that it is the source of Shakespeare’s determination that “what is past, is prelude.” Our elites play out our destinies as if they have no free will – no capacity to break with structured ways of seeing. Yet the middle-echelon specialists keep sending their relatively accurate assessments up the ladder of power. Hope springs eternal.&quot;,&quot;5&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;3&quot;,&quot;2&quot;:&quot;15 Civilians Killed In Single US Airstrike Have Been Identified&quot;,&quot;3&quot;:&quot;Jessica Purkiss&quot;,&quot;4&quot;:&quot;Videos 15 Civilians Killed In Single US Airstrike Have Been Identified The rate at which civilians are being killed by American airstrikes in Afghanistan is now higher than it was in 2014 when the US was engaged in active combat operations.   Photo of Hellfire missiles being loaded onto a US military Reaper drone in Afghanistan by Staff Sgt. Brian Ferguson/U.S. Air Force. \\nThe Bureau has been able to identify 15 civilians killed in a single US drone strike in Afghanistan last month – the biggest loss of civilian life in one strike since the attack on the Medecins Sans Frontieres hospital (MSF) last October. \\nThe US claimed it had conducted a “counter-terrorism” strike against Islamic State (IS) fighters when it hit Nangarhar province with missiles on September 28. But the next day the United Nations issued an unusually rapid and strong statement saying the strike had killed 15 civilians and injured 13 others who had gathered at a house to celebrate a tribal elder’s return from a pilgrimage to Mecca. \\nThe Bureau spoke to a man named Haji Rais who said he was the owner of the house that was targeted. He said 15 people were killed and 19 others injured, and provided their names (listed below). The Bureau was able to independently verify the identities of those who died. \\nRais’ son, a headmaster at a local school, was among them. Another man, Abdul Hakim, lost three of his sons in the attack. \\nRais said he had no involvement with IS and denied US claims that IS members had visited his house before the strike. He said: “I did not even speak to those sort of people on the phone let alone receiving them in my house.” \\nThe deaths amount to the biggest confirmed loss of civilian life in a single American strike in Afghanistan since the attack on the MSF hospital in Kunduz last October, which killed at least 42 people. \\nThe Nangarhar strike was not the only US attack to kill civilians in September. The Bureau’s data indicates that as many as 45 civilians and allied soldiers were killed in four American strikes in Afghanistan and Somalia that month. \\nOn September 18 a pair of strikes killed eight Afghan policemen in Tarinkot, the capital of Urozgan provice. US jets reportedly hit a police checkpoint, killing one officer, before returning to target first responders. The use of this tactic – known as a “double-tap” strike – is controversial because they often hit civilian rescuers. \\nThe US told the Bureau it had conducted the strike against individuals firing on and posing a threat to Afghan forces. The email did not directly address the allegations of Afghan policemen being killed. \\nAt the end of the month in Somalia, citizens burnt US flags on the streets of the north-central city of Galcayo after it emerged a drone attack may have unintentionally killed 22 Somali soldiers and civilians. The strike occurred on the same day as the one in Nangarhar. \\nIn both the Somali and Afghan incidents, the US at first denied that any non-combatants had been killed. It is now investigating both the strikes in Nangarhar and Galcayo. \\nThe rate at which civilians are being killed by American airstrikes in Afghanistan is now higher than it was in 2014 when the US was engaged in active combat operations. Name&quot;,&quot;5&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;4&quot;,&quot;2&quot;:&quot;Iranian woman jailed for fictional unpublished story about woman stoned to death for adultery&quot;,&quot;3&quot;:&quot;Howard Portnoy&quot;,&quot;4&quot;:&quot;Print \\nAn Iranian woman has been sentenced to six years in prison after Iran’s Revolutionary Guard searched her home and found a notebook that contained a fictional story she’d written about a woman who was stoned to death, according to the Eurasia Review . \\nGolrokh Ebrahimi Iraee, 35, is the wife of political prisoner Arash Sadeghi, 36, who is serving a 19-year prison sentence for being a human rights activist, the publication reported. \\n“When the intelligence unit of the Revolutionary Guards came to arrest her husband, they raided their apartment – without a warrant – and found drafts of stories that Ebrahimi Iraee had written,” the article stated. \\n“One of the confiscated drafts was a story about stoning women to death for adultery – never published, never presented to anyone,” the article stated. “The narrative followed the story of a protagonist that watched a movie about stoning of women under Islamic law for adultery.&quot;,&quot;5&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;5&quot;,&quot;2&quot;:&quot;Jackie Mason: Hollywood Would Love Trump if He Bombed North Korea over Lack of Trans Bathrooms (Exclusive Video) - Breitbart&quot;,&quot;3&quot;:&quot;Daniel Nussbaum&quot;,&quot;4&quot;:&quot;In these trying times, Jackie Mason is the Voice of Reason. [In this week’s exclusive clip for Breitbart News, Jackie discusses the looming threat of North Korea, and explains how President Donald Trump could win the support of the Hollywood left if the U. S. needs to strike first.  “If he decides to bomb them, the whole country will be behind him, because everybody will realize he had no choice and that was the only thing to do,” Jackie says. “Except the Hollywood left. They’ll get nauseous. ” “[Trump] could win the left over, they’ll fall in love with him in a minute. If he bombed them for a better reason,” Jackie explains. “Like if they have no transgender toilets. ” Jackie also says it’s no surprise that Hollywood celebrities didn’t support Trump’s strike on a Syrian airfield this month. “They were infuriated,” he says. “Because it might only save lives. That doesn’t mean anything to them. If it only saved the environment, or climate change! They’d be the happiest people in the world. ” Still, Jackie says he’s got nothing against Hollywood celebs. They’ve got a tough life in this country. Watch Jackie’s latest clip above.   Follow Daniel Nussbaum on Twitter: @dznussbaum&quot;,&quot;5&quot;:&quot;0&quot;}],&quot;options&quot;:{&quot;columns&quot;:{&quot;min&quot;:{},&quot;max&quot;:[10],&quot;total&quot;:[5]},&quot;rows&quot;:{&quot;min&quot;:[10],&quot;max&quot;:[10],&quot;total&quot;:[6]},&quot;pages&quot;:{}}}
-  &lt;/script&gt;
-&lt;/div&gt;
-
-&lt;!-- rnb-frame-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-The dataset has 5 variables (columns) and 20800 observations (rows)
-
-After reading the dataset, we find out that variable ID, author and text do not contain any relevant information for our prediction. Hence, we will remove column 1,3 and 4 which represent these data.
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY2xlYW5ERiA8LSByYXdERltjKC0xLC0zLC00KV0gJT4lIG5hLm9taXRcbmhlYWQoY2xlYW5ERilcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-cleanDF &lt;- rawDF[c(-1,-3,-4)] %&gt;% na.omit
+-- Column specification ----------------------------------------
+cols(
+  id = col_double(),
+  title = col_character(),
+  author = col_character(),
+  text = col_character(),
+  label = col_double()
+)</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaGVhZChyYXdERilcbmBgYCJ9 -->
+<pre class="r"><code>head(rawDF)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibnJvdyI6NiwibmNvbCI6NSwic3VtbWFyeSI6eyJBIHRpYmJsZSI6WyI2IHggNSJdfX0sInJkZiI6Ikg0c0lBQUFBQUFBQUJ0Vjh5NUljeVpVZGhtUlRHcGc0b21tMGx2bk1Sb0FwcTZhQmZreDNhOUdOd3JPYWpZZWgwTVMwMGJqd2pQRE1kRlJFZU5JOW9oSUowNklYK2dOcUljcDZQa1g2REgxQWY0SFdXZ3gxenIzdUVaRUpZRWd6bVJacTBsQlZtUkgrdU05ekgrN1A3LzNEUjlmLzRmcTFhOWQrZXUxbitOOVBQOEN2MTM1Kzk5bXQyNS9jdm5idFp6L0JYMytCei8rU1AxL2pxYi9HTDN6bXIvall0ZnpmbC85TGYzNlYvLzdxWCthZnY4dy8vMjE1OHRvdjliM3ZPZUMzajhLUW5Mbm5XblBIMSs0TDh4Si8rTHI3OGZzLzlPYitsZXZNaFhQbWJtamRIaDhsODQzcmV4Zk50MTN2Ry9PMVRhRXpkemQydFhMOUcvTmk1MXp2YW5QZTU5WCsvWU52dm52eTVBdnp5RGVOalh0enQvRmRIN3FGT2ZOcjh6SzB0ak44MzdiYklaa1RjeGFkNzVjMmx0Zi81dVZtYi9xTk15L2kwRy9NWTcvZTlPYWg2ODEzWVRBUGZIUjFmdkRMVzUrWXUvN0tOOTUyeWZ3S3MzRVZXTHJ2MW8wejMxNWdiekgxMFY4Njg4aGVPWFBtc0xIejJtRVhLejhPODl2emFEc01ZWGF5dEZmV2M1eFZpR2JscTk2SHpqWm02TGJEc3ZGcGcyOVNIN0FwdXd4RG4xL0JKeDIrNklPcG5jV1MrYTZ0aHdZazIrZEovdFBYdHJyMHpqd203VUNhMERUN1hRZzE2REUwdGZrbVhNbCsyNjN4Sy9NSVN3M3RFa00rQ1JIai9TcEVadzBlaWVZYkRHUENDczl5ejJlWUxZYlFKblBqL3V1cUdaTEhNTDhHUThQTkE4SVc1dXRhZm5IUHh1aWF4bnd6VkVQS0gvN3JleUNDQTNOUHpZTm0zM1g1NDM5ek4zUUppL0JEMjdsZE9xMUNXMTc0MnFYa0sydWVEZkhTcHpMT1h6MEtPeHRyOHd3dmRXRi9OUHFUSWFXbEhkcERjZnpyLy96L1JCek4yZDRjYkpWaTk3VHF3eEx2ZnZUaHd0eis4TmFuNW1KWXBpcjZwVHNlQ0w5VENsTXZYT25NbmRaRjdMY3pEMEs4WEpodmU3c3hONHh2N2RxWktneXhkMmtQYWEwMmxtUUVnOTErWWV3VnhNa3VJWTVEVjJOYWErNkNsejM1aE8yMElPN0oyWGVtOFpYcmtydHByci8wNExmZGhpYXN2VXNVcVY4NWZ2UzB3YUloYTlBaUxDbzY0NVBwSUc5aFdFSUtOMEdXK2pKQTNNMHpGN2tQclBpRmZnYjV3dFA5QnYrQU5wYy9mdi83QjJmbm9HOTBvRVhFdGx2TUpNUTlOV2NRYWx0VklkWlFJazV2emNpYlVFV3N2RElXTEZvWTM1c21oTXVFeFVPL2RzN1lKZ1Z6MllYZHVKN2txdERWSnp0WjFqWXZLeG5MZFRUTktWblVEeEZ5VEZYcU41WTdBYTlsS1hpNTY4MUd0cms3OGQzS3RsaUhhWlR6SUVRWXVrcld5UGM0R3plMXc5aGNGYitnMFRHdUJmMlRQdFRhdlFHYklRKzJWM1U5c2xBaVcvSUdabzlRTnlHMmdhckpnSVVFcVlnR1JuSlhGc3VFVnJRZUN3TWQ2eUsyRzJkanRoSWcxU3FHdHRBWWJObkRSa0FnWk9OWDNvTEtQY1ZXSDRNeG9ZcHpodWRPN0E2bGJwekRRTUo4YkYxM2FxN2ZJU2xKSVNIOElwT3VDMnJnM2hvaXZ3ankxWE9HbGcyMkRrWW5waks1TXY2ODY4RXN2M1pkQmE1L1BkUys4cURaUWdaNUNpSWxNZEF6RWdpeHlUbkxsL2JDbE9pdXZOdHhrc3dSMEdSamEzd095ZStiUGVpV0tsbzRyQnFTQy9rRGw4R2hoUDE2V2M0ZVUzUzk5YlMwVldOaGUyU0xrSXdBeGFDZFBvVzVwRkJpRXJ1aWxJaklaNG5aVVp4QTdzVnN6WGRIa3Q0VnlvQkVSellnT1pVdEtLUUhwZUFKZHFKUDBHajdCbEpQMVpSWmhIMm5KaXVXZVRWQTRuVnBXR01Md3YzdGl5eWlHNG9vWklQN3lJUjJyMzNxU1Y5K01KZFl1OTFTaWtBSHlDMFVxTWZ1c1kxZTFjdDNWeTcxZnEyYi8xdDQxRVNaREZ2SHNhLy8rUDEvT2Q3T2phOWU4UU1JKzhadHlOMmJvejI4L1ZtMmg5ZWZyc1NjSlN4NkpsdEZ6MmhFTEpWU0NWTnh6dE1zZC96Q1Z2MWc0ZHhNc3Z0UlBjSHNReUdRWFdkQjZHQkJ5QTNzL2NmdmZ3QVBocTZvS0VmLzhmdC9oTVhhYldCWUQ5Y2pSTG1EcllSdUQ0Y0Iwa1JSNE9SZTk1eERtQVBGZ3RPSElNWnMyN1piRzFYaTBvQVJ3ZFlleGhuNzZ0WmltVmJZd0V5TElWbTlTbUlob3Vpdld2K1phbEdXYlFQVFh1L05WZGlwZWZFZGhBWWJ3U29pSkpJN1BPQlpFbWVmYlJEb2tyQlJVQXZTQWVucGQ4SHN3WDE4K0FkS1hiOVJsZHNHaVA0UzY4ZXNSREx3QlZoaEsxdVh4N0pVdGFmbXpyVFpVUVJBcm9IVW5sdk1zdkE2a0c3Q1lyZzRnVEViajVGL0gxMENtbEdqT3RvcTRld3llcmZDK0RFSWF1S29uZXdOek1INzlJeWhBUUZoRFdzS2dHMzhHMnF0Q29RMTlWRERqTDNENjhEOGU4ei9IdWZUK3NRbGp3S1dsWndXZmtPa3R5VFM0MktVbHFCSUlRQ3BtVUJxc3BFYWh1RXdJVlQ2WWdOYUxadkJUZlpyQ1ZJTHpRTjk3c3oraitMaGlFMUVITlhTVHhDbE9DcWxkTzliUitaeXJLNlpXMy94ZUdyZU5xNjZCRzFlN0dpVElLL1FodG5HbjJjai9iZ1k2VC9EQjlHNlpxaHh1S3hCa0ZPeGtnZE80dTdvWFFDbHFRM3FCUCtabGVUcHh0bkEzT1B4Ui91YUxkNWtnMG1TaHpUOFhVdlQ5cHhTMDA2V2VYRmt3aFlxZkNwQ3BCL2ZiMjB0cytvZVRtRXh6UFdMd0wxbWd5QStaQWNPL0FITFc0ZHN4eUlYb09wTVRhZ0xJS0svUzVQR1RBTHc4T216ZDdqaHpIcUxaYnpDMnpWa29nbGIyWTFveXpiMDFGTXhpcU1md2UvdTliWUpndGdQaklKcWVVZlVoeW5IVlhTaWpDbXZwQ0s4dE9zQnpLYmxFVXRjSUdndk8rZG5QczdaaGdmZ3lpTk1BaVI0SnJPK0o2dmhnR3k5T05SQ29aSXFIQ1lRS3RPd0lDN0t3anZDRzNCb0ZOdnJMd1NnYm1hR1JkWFJOcGQ4OEI3TS9oNHhUZlp4NmpwZ1o1SnJWbVlid3hVbWhER3RJZFdWRXl4VFpUdzBlZk9aUFo3eFo1TGl0REJyUklicWFWcFJQOWtRME9hSTY3ZmdUbXNyV0g2WGpRSE5SMnVCWm1uNTFvek84Q0RzTjNEZ1VoRHFDTHpGWHhqZzNSWGRNOThWUzVDRzlScWN6R0JiUUxlNlNOaGkwUVV3ZnZIUGp6TWJZaVNPbU1wdXJ3L3JWdkZ0WjlZUkJncTA5QjJrY3Vzb1prSU5ocU1uQ0VWWFlNYkw3SC9yQUZuSmc0T2RjRkdDYjMyWnFGRFRpd3NmVGYzTzdndDR2c1FBQ09QZ1JpTW1VQXlabzZ2emxLemdiZzBHMmxDN1JtQWtITWNXZnM0dkVhVDNlM2xuNlNtQlBvRkpHNzg5WmJCN2FFN0ZnSk53TmJGaEpRSXRpSFovQkZUTi9jYS9naHUrTzBBbHhYMkxPQ2JRVEVrbFhCalZERksrMHIyUUZqcGhIMjI3aGYrbnY3S0laaEh0WVkySVgyWDFLeWg0aHloM1lXQWRncjZSQTV3OENnajhFSXVDUFdKQUpOYUd5SWhVYVBaSGxOM0IwZWZOd2NGMWFZY2RVTkM0U2lGRDhuMVNxa2NQbEQwMDhIMFlaV2FiQVpKN3hLRGtjclVKR1NzL2c4b0VSZVBSdGY5UmtUVjk2MTB5NUZrbXR2bDFFSzZlSXd4OXpjMDkvdyszUDFGYnMrYWFIa043emZPQUtIOVBtelYwUGdrTi8vNHpBczlLMExQYTdpdllNODRMdEhqNzFEekdNc0lZS3MzV3FwNGJWZ3BJbnB5V1JVRXB3V0h1Y3pXQUdtblliZ0ZaNXVwTVI3SnRFTjh4QjVQWEFCYTYyaXZFUHl1aDRzVEUxakY1UTBYTFRLV1djelViWVFXTXZIaExtSmdETmR5SURoSWd2dTZYSkpWN25ZVmhwUXllWWlBdWZZbGd0aTFoL0VGYzF2VXhJSnE5QTFMbU1Sa0o4KzBMQ1lEZmlzdjdFcGZqSlJIWnd5ekY5ZktuTE8rakQwOG1pVjVIV3c5RWxKa1gzM1plUENsMEM1OW90dWl1eFhKOFp5VU1yNmg5NU1Cb1lhMTVCVS9SQVlpbGthWEVQd2tTcGRzd3hMenR0aDh0Smw3VmFOb1d6Y3Z2WVpWKzdSbVhpeS9sM3NRenJaM0NIRURzeXJsYTVaUkRLYjdNbzcxamhIOHYwQk1MNi9oWEMwUjJjbUxwYWFOUHJYaXh1eHY4Mmt1NkR0c2poUmd3YU1iRThZSEdZNEVXRzNtRUwydVhCQ0FIVld3emJMUEtCWENWQTB4b01WVldGWW9QQTh4S09OYXBkWVVYUy9oT3NCcGR4eEN2UVBlYWM5dWxadDM2VFhUdWhJQWRwakpHajVEalZES1dkQ3BpTkxqdkEvZG4wMnczekgyQlNFL3VJcHA2QUJwT0wyVEhhcjdLWXBGVFdRUUIwQklZQXdsMDhzTVBiT1ZFbUUrWjFLZ3VqZmdheGtyRGxBeXpnRzZZd1h6SGZ4bTh5VGlhaS92bGY3dlBQT002Qjc0ckJ3YUJhWHZJREVpN2dwYjVXRFZPWFZza2pGV3JDNHd4K2lVRisyTEpZSytzaUFaRzRUb2tONmpCSzl3VkphTW05TkdZNFV2em02T01ET1FEVVdLbnN5MzlPaWRjOFVXbDZXTkdqM0IwKzBYaE95SkJDR0NTNU50akM3OVViYURCZlE4VHk0M3RkMElRdUNjMVpJa0Vnc05LazlGbVZxMlRqN0dzWVQxRWpXZHErTEtVcGNmbGRkV3FDbnkydG50ZEpUM21ZNDlISDlrcjJDL2I4aDA2VzBwMkRpNFFId3JHa2pGUGpibEFtQytPRFlNOVpIN1EzSWZKcTNxTkVoZGpqUGc4MUJ5UTluYlZTSlNaTXhBUW5vOC8wM0RSMkhWUVNVM2tIelBnQUZNeUV5VjJvazh4SnB4WEVpb0toYmQ0MHRjemUxODBla3hucVBhc2hlR3EycmMrLy9UektSR1grb0h2d3hXcTdpT09ZYXJTTFdtNE10YUI3SjhUa1RLWGtpb1htZGpoaDMwbzJVT0FWMkFIZ0E0eWZLZGZMWmtOTURjdUJYL3E2Z1J3SEFVbzIraWhnOHlmcXB2NkZQRmlOeWg3akVUTENUYURTaW0ydUZQY3dXZ1FGbHV5emN6SGdKUnFFMjlLS0hadVFIbEtrRmszQXJueHZQRDVUbTB4WG9sQnFzWVZLQ2RPUkY1TGhiOGlQZ0d5b202aTRTNndNS1pxWkhVZmYvaWhmclRnUm1YNHpIT0pVUVg2azFXd2hRUWYyWnZCaVVKYnhMWmkxVFR5OStzMXZqaHpjVTNnSFVvTUZodVdJQ3A0aUg2ejE5RDJNWlA3TFI2KzZGek1XdHRUTmEzays1UmtJSHdTZWF3YVpUaEVwK3VFRXBDcVpHNVk2blZlQUhNbVVTem56cWM2dExxN0lMR3dodU5maDAxbnZuRmRCN1hTWjI1aWtUQmEyTzh3WnRWRUZLL0VOd2o5R0Z2Y3d6cDg3OVFabDBTU3lyZ1IyY0hhRUJCTDJhYmtFV3hmZk82M3ArWUMvM2VkQ0tLbmhYOU9EdzBqTlZRYWU5MnZ4VUtkUlN5SGlLSVZxRU8yVlpHUkc5eVEvZ1htRllaQ09PQXVvUTU3TXExWWlIV3dpb0VSMG9CWkNDekY0bE9oZENUbVFYcGk3VW8wajJtWjBleDVOVUE1Q1lMaGtoY01jMkdIeHR6QlErbHlieHJMSUZNVjdLeGhZZWhaSUtpc1ladldnY0VoMTBNbWM0VU1QR2tLWWd4cmlhejRSWFJVOXh5RTlzelU4Q3UrUmlaa3NqMXhPM0JyaGJBaCtkYkRFTkdTUVZReUMyajlBM0hGREJUQm4zRFlYcko0VnJORW1BeFJWRS9YalBXOGlBTUNFYzZVQmR4RFpuSmtISmFTZmg5Tnk0SXZsSkNLMlhIT1B5c1lRTWZTWmM0K2lYcFExT2l3b21NV1BqRnRPMHREU3JabEo2amRhRnlZN0w3d3JWM1FHc1E5cHhIMkF6TGdpVmJwbFJBTll6SC85UVZqV1hWOHZXeEVvOXY4Q2MxU3J0UEp0MllaY2xWd1VLVXJmbUtuRGphL0o1RWRaZUZ3cUR3RS9qa2xPSmFBampTR1M1YUZseUQ4eS9kOVpVY3ZMaVFEbkc4WjFSSmN3ank0N045MFhmcjl4bTVURGxEVk5ncnFoUXdqSkY3dVovQUprRW1ERXF6TzFWK1NuZlFoWk5lNGFuNllMVHg0dTVRbkR5b3VZcUdKK2JIM0M3SndmQmlCNFZ0cm1LMHpFSzFQMDFObGlrMTh1WUdaMkducy9pSUM1RFh3VjltZVhWa3hGMVQ4clkrMkFsSTRjOTE2WTkvNHhjaWVGclpvS2xjc1JzM1V6RjJ4c3hLbVRndTRDcEtyQUF4REJHZTExQk5kVG5VMndZclhZcXdlb1RveWZNbmk4YnRzcDVmOHczVVpEdEFNVE5VSEJIMytUU0NoR0cyVW1iVnN4SGZIR21VbWpwaGVyU3M3dUFUMUlCOVBJUjJtL0dnVzRPbGlmamNRa3RFS3RYRDNUR0F6Y3hYRkVnVUVHVmNTQTJpeHJOaGFtVWdGUkRhcnVURGk1dENOSnJGaUlLN2JVaEdhdGxQSUN6UW94VmhkNlpYdGZqZXc2aDZGTDdRQU9XUjBhazJ4RWpDUVkxb0tIZHlibUJUNUEveVZQMWhVWUNtKzA3S3JKUGdYTTh0b0lRc0Vpa09qRkpDdUF6V09YRDJ0MVQrS1hLNjBNNEJWeGRjUVY4OFFaUDlPc2xlNk8rYXJpRUtrY2kvb21HT0wrYnVqYUFTUFNEZUJrQXM3YW9OaTdRTGI2eEk4RUN1QXVsSTRYYWpWeTNOaEdWc3grOHdpZGlYdlIyaWpwUXp1QkI2ZDltalMyNUhGYXZHOG1nMkFwa3NWUWJmMlhUZXlDbmhaQVJjc0NhSWNZTGpLdTM0dlJDVElESWpjZ1FUVnJvdWhWZE94MlVPeWx2QXFTc052Q05XQS93RG85bVgxVXFJbFRKbGtHQmIvd3hubUxaSUJWbU41ampFY3JaWFUrUllTWDNSckdrbm1raDV3akEzaWpZemN6RU9nSnJFQzVxR1BqZEJpd3I5M003Q2QrYTBKL0dKaGMwU3BHb2hBYmJJRU5iTlJCVm9RUTAyMkhkSlJaYWd2eVJVUllNajJHdFRUbEFsYzZicnpLMDdhTnpCQUpLT1VLSVVNV0lMRzUxaEZ0WWRiWEtoVzBYUXdGQTVkTVEyc0VrMDdZbkthZ2Fza253dm9oODVzd3U3VXZHVDVtMkpBNmRFWlJ3UWhTd1gzRko4R0xhSkt5S2Y1RzQyVFdiMXpkU0dHS0NCM0N6Ulo1Q1FYcDl4a1J4RzdZM1ZrRWNYWUM0emZSb0U5N24wanRRcVdkMU1KTktOL1dLUXl3emlWeXRZVFZyL3QrK1BFbkw4MW9hN0xkOE80YW5FV211ckpuQWlkN3BwUk9ESDNFRmxIWXhKQkRXTlNselJmd3c5c1cySzVUWEpRNSthVEQ0M0FjbXlPOGZDWFJWa1VxbmkydEd4N3NhUlNhWGtNN3VTdms5aVZKTGtrSFcwVVN3M1JkQVBhRVVFdk9TeVhBclBVNk1HbkEzZzFNRDAyY2xJNDdET21IaS9zeWt0QnJxc2FCR2c1OFNzR2luNVdBOTR4RkFHbVpwa05YSVE1V3FnNkN6cDVpR0Jha3RaaTdJR09RSS83eFEzY3N4S0pNNFdPVjB2aVlIU1ZyM3hEYVFNY3JNVk5TbFpoREliNXJoZWZ6Q1ZSclNQQmYrM1kyRVF2b1JtS2YvZnFUemFJVFZYdHowdFZtM1JEV0pPME5Na2lVaWM1aU5MYUFJRzF6VDVsZ3psNVhQNVc3Wm45RmkxZzFMWmpxQzg1b3pMUUJtaVIySnJhbGxxSmZUbUtacC9vU0ZnK0JUM0h5S2JSc25JQVZ1bkVQVUFubXltZ1lad2RSWjZ6ZVRtUDluZFFZSHkyUS9BQThueGpkMUdXZmM5ZStWcmMxUFd6L2RzZm0rc1BEdkpkclJCTDVWdkVqTWtKbUtLOFQ1TTNpcmlBRUxGdWNrRmtDWGdDaXdxZHhTNllqaVNqWkNnZEVLb0pjMGlmVTZ6NFNuSlk0cG1Gc0Q2bkY2d0tpdmczbU1tOU52K1VBQTJTQzNwZE1HNUlZOUVGUmlnbFZzdUpOZ0dkbHBibDcwRlRud3ducnAvUnJPVXhZQzJZZVFSZVVmZDErOE1QUDFwQVBBS2R6RXNta05ObXJNeVhYQlFnb1ZlalNrcWZtcWZhZ2tNUGZnbTdxdjRoQXdKTkFtbXRITjRzUnhRTVBIdzdKVUdrMmhhMTZGcDdwbklDdUhjQm80eFk1OUVBU2ZFd3dudzVvNjRyOFlLWU5CY1FPWHczYURwaDUreFdDQUNoNGlzYlgwK2xvUEtsR000a09jOFN6eXJKV1hVdlVFeDh6Tkx0UTBIUnpLMnVOYmp4YWhqcTdGeFAxTE1TbUpjd053SVh0R0xUOFExdFM2YjVZMS9YTU1uM0FheFB6YlBSaHg0Um5YUDhtbVovZXVJZVU1UjM0WTlBNUZJK3huUlByN0RpcDZzVkg1YllVVUp0YWFFNnZ6TjFydVh4WCtCMXpIdUhXWGRhU3FtOE1yZktvQk5VZ1RpdFZnVE1lK2JHYTNPRGVVV0s3YzFUYzJObSs4MTJFL3B3VTFXR2xtazdSRmg0U3VMT2FmbUd4aFBEUjBuQmR4a3JOWnhIaUNscUttaGZvN2RRcWdZV0pnS0FDelFxTEJYTUJxZTgwU2huSXNsSUtnb2ZFVE45QWhHWGhteFY1YmE1ZnAyd0ZLQ0JRQ21VYm9obS82VWFPamo4MkpjYUU1NlVNWGVsVGdYZGQzVk96aTEwa2RpQ0Z1NEZabWhFYUJzdGhGSTdSTnhVTmU3ME9lRkMrTXFvSlhvRnhTVWRmU2pqSmFyNS9POXUzY280ZEJUNWIwOHZ4c3dIRzBja1N5cUFTZDJLRmtSSmJic21USjBIMW81bFlscTZrbmlyUGVXRklCNHpSc2tqMk80WW1TL0drdlRLdnhiOXh6UjNWb2o5T3MvUVVzaFJxbEtzZmdLM3JabUFCbC9zZWxQYjBxMGlqUzVIMnJtMjdaSmRDREV3ZDlFUzVhM2k0UHZWMEtnRGhUQll5bGsvUllVZEcxWWdrK04yeGxoSjlGSnRZSGxQRnBiRUtyTnVJbTJsY0NtZG9MeEZVVVp0dEJSNzRGNUx4QUxHKzVQTUZqSVJFbkZEUVBpY0QrdXhDVU5zMXRidUkweTR1Ym1BQmFURU9VMTRIWWlucmE5OG9yOFl6VjZoaVlZMVlodmo0RW9kZXFjaW8vR3d6RHFyRDFhMmp1S2trdE11TzhKTk5tZzU1U2JUV3AyYUo5QzIxODlHbE1COUxiSVprNDVBT21FTXRqaG9KNFI1cVB4VzhsSUtCN0ZudGxEdnhFNEloYWpzVWRXOXRFR3daaUlnMzJwMWNPc1UyOENtdDNBTG1mOXFiQk56bit0WjRha28xM3dBTzlKSkxBWlQrVEg3SXRhUm9MNk5kcUJEbHZENHFZUk9PNTl5QXFONFp3RWNVVHZKZ1BMdzE5QktSWVVMRk9rUWJzTStEQWp3azJaUTRGZzZJYUxXWEhhRVlzSUtJbVZMS0ZDU1F0aUdKcTZrazFWY1Q4UWZWOUxrY1JFbTBSR3E5NUxRMXFSNzhtbU1LbVorL1VudWVrdE8yRFFxRGtHZldIU0IrWW1kTEVvWWttRFVqQU82bFZkQm9IV0VXTi9JVGNVMFlCVmlXc0Z1Mm00Z3ZkVFN1cW52M016ZEh1cjV4NW0xR0NHdExaMFlzeXV2RGNiVEFxUnppd21YT0VJSFZZY2EwTTNMeHlXVGxvTG1QU3FucElHQm9lbDRTcUFmcXcyQzNFVkdKakpDWTRldTJyd0hqa3l3MFUxVm9ZdzdiTDh3OUVraTVWVTFiUFhMc1hRaklHU2hiSnB0ZGllYlRVTmtha2YyUENlendzVnVZTWZIalhuaUhscGRYVzQ5eTM5TVpQMFpkSFpqRWsvKzhqR0w1RXhKYVJFU2tMZVRBcStvZFpOZFNpOXRqSkExZUQrZDVzd2hFdldCaGI2THluUEJxWGlZNXk1Vmc4c2U4SXFPRVdZaGIzeU84L21EWWlwcWpxMUcraDlDeGcyUWJxZjVUZHEyRmRzL2NpQWJKRGk1OVZFdXNUV2FXTlJVUytrYlM3a1hUYnBORmF6UzVjTjB4SDIySkR4SlVSclhmdnorOTZ4clZKSUVhSmdEMkdoWHE1aWJxUzJRNDZ4enpLVjUxWXk4RG1LWCt1aU5wZVB6bVk3QXN4cE5NS2w5OENMN1BKbWJ3bmRiU1NKcno2L1RvZ0tjY3JOVnN4bDZ1bmFtcjdNN3RMSDFLZ2FwWTRRUTJEUVA4NWFrZFZBU3dVRU5nTXVaQUVJM0JHa0U3RnhoOWxiTU9iSHhuV0lHRDBDSm9pRVRiMXl4YjJwRGszWjNZeHU3OUFzcExSZnBWa2w2a3NFS3k5anJLTjA2VmtBN3ZTVUlFSXNhZVJqR1ZaRi9hdFF5ckZsYndnZDVKNERWMEFIejh2RTl0dGFUQW14VjZ0US9DZEZUSnV5S3dMTWU0eit1SnNQVnZMWVJvN0l0bzZ4dzNrcHZiank5OStUOEpuTjU3R3lXZ3NlWUI2bUNOT0hsMml4VE5IRUVCc20vN2pWNFZUdFB6UGgrS1o4U01lTXE3aWlaZGN0RmlSYm1mcmYyWUh6VWtLMDJqeDA3L1R0MmQyc1FrU1JCbXZ2d1dCUUd5TTBXVDdEeDBta0tRZ29NVmhyVkR6Yk1uazRFYmYwZWdIeW9PZjlaQVBRaFhRVTk1aTI3WXRPVHBpTitTSlAyTHlmdFQ3cHdyc3VKUmYwTmhlMjNPUjZGTFhiZFdtcTdYZGwzY3RVUU9iMDJpSlpTb2phSnJVRGVYaEtoVXBpVmhvQlNsaDdkMko5YWpOVGJLcDVONmFYVFNmbTEzYzlzVGg1SzYwOWlBN1RIVHVJKzZsaFcyd3lwUk9DMDQ1R05GV3B3U294VGV0VklNUGlaSVNwTEVjbnZRYjh0WElZcitRektoaFQreEFGckY1VmtzS2F6RlhBSXN2K2NJYUFSa3RDZnBYc3ZDVjRwQ004d3JBYVdETWdiTnEva1F3R1NwOU1xeVpUdThKYXBvL00rSndEZmZpS2pKRDRsOXZ1cy9HMnU2MXZKdDl0bXIxUEFCSTdKUG1yUm1LVk1qczJlSWVPaWhkTHdQY3F4ejBDNWMwM2hXUy9KZFFIdW1wa1JvdU9ieFNnRDc3U3VMNDY2UFkrQXZsVS9NeVJ3UXNOMENaZFBIQnhvRTdwM1dXVG9JeEFrQXgwYWxaalZXTnlGSklZRjJtcGxZR29PazJDUlljOFdQSkhHMW5VcElJTEtsTFVzVXd2ZGlid09ZZXI3dmZKN2wwVnVIWEpwaXJVRnByTHpJYStEUUVrQjk4VStlcnNBUGwzdThlTThSZXRBd21kMEJEeXNJc3RtczQyMDNaeitHV1l4bjBacm1QZU41b2JHNlZKZHpWWjdGaW5ieUdEdzZkSzJ0cmlUV2VZZ3A5dWsyZUFNMHR2WmJ0WXIvTFpaWUtOektzcDFhbTQ4WXpiQVZKR3RoMS9NelB1ZjNNUE4zQUxOMU5xQ0drWVcwZld1NEZkRlNsb3hKY1Z2U2gxRk9ESWtQVHNqbkdGZjlxUFNwMHRUSTRhWkdZQkI4Zy9ROGJUTkJwbmRyNnlOcTlTeVgxWlBIczRsa1EwMUE0anE2UUJWR2twV1VGdmkrVVR1SmRFY0ptTUt5VGRvZ1Eya09kSFUwc0JvWllyUk9KZ1VDSXFoNktYSGdWTnA2cWdJMWd5L2lHclZpdHhLNmhXNi80MmNoTW9Ob1pGQTg2RUZEb1ZNWmNmNmJxbTVLNmNCRzFuSm5pQ2pVeTdEVFVOZzM5aGM2Mkk5UVdwaVVxSjBydGVlU2pGRnhiL2UrdlRkbnZTVVp4TmdSTWZlZUo1dkZNOGoyRVU3cFVuMkFMeGJBRnN2a05JTHFtekVIZXQyQkhIVnJtclljeWp0RGVZbGp5ZkFVcFRqaTdJZXJSZlNXdS95MTlJOFhRMk5aRG5mZWxiM1NCdVN4cnFJVWwvTnVyWnlPOXNCSnA5THpXOHF0Z3Z1Wk8yeDlFcnd1WlJMbElwUnhZVHJ4ekpTb1prV0lKY3hxT2xTTnZjYkxxQmxmUnJJSG5RYXRndkVHdHF2V01Eem9SQmwvelltMzhWMTFXNk1MQmkrUXh5VHRIS1hwblphN3BWWDV6MStnQ1dRQ3VMcUw4cHh1UmxYajAxcHlpalZ4MUVKUjBXYnAvWFpEU0lPclhORkNnNHo1NnFDRzZiU3BLcS9iQkF5R1ZGQzZaM0F3aWh3VzlIYVMxSDkrUTZYR1BseU5QaUNwd0RJeFI0b0VKRENOWVNMUFhZYVVFb2VRNlNkUWFZNFJqMERtZUVHV0txaWszSUtSMVBxWTk1Rm1PTmthMkl3anpES2xNSllpSFJvTWszeXZXTEp5c0dFTCtRb05CQmMzR2U0TFFGa2NRcXFjeThkRytzNm1KRTlXemUwd01vR2pBc0xTR2p1UklCOEs0OEt3UFZnVTVja2s2RWhrdmdaSFVyN1BlV1VZSWx5enl4aU9IWjNuOXhKeWRZRkltaitlK1FGNHhsbk5XVE83b3RQWFVoVUR5NlllOUR6VGs2K1NwR0FRTzdHeGIzem04WmVXaWFUSXlzeEVtYm9ZZENDMUlyU0F4dlh1V09Cb3JpeldzMFpVNUh1dGRqVUlEM1kwdlhMNmo2ekJPdUdXYk9zQ1VZcXdCTWNoWVEyMGk2cXVUUVJkYzBETXd2THpKSm84SkMrcEhhSUltZitrWXFJVEpuUnlvbkJtdkJkRDVIOW1mQ2F4eGxiU1cycXlSNTFRdDZraTVIVGpmT3p3aElrOWZPbUtJV0JMN05VanV1VGt5T1NhaGJHTTExWjg1QkJWckNPUFd1N0V4WWpYYzFrWi9FRkkyZ2NTWFpRclZPOWhvaE91RlJFaWZsaHo3VDZzdXpteU1ha29kMzJoVlJxRkxTdGpOTWNmQytzTDJtMTRtUmRzenFwUXJmS0NaWFNjVWFWa3dnYVRLclpuNUVhVDVDRFNMVUpXemxMY3E1SE56WUVQM0tqaEI2MzNUUERMNGFsWkRpbk5ncUJaeG1mYXZRaW5ra3lmaExnTWF2Qi9zbm90QmJsMlArYUc2NU5xZnNYQjcyMTdHWHpBb05ZQ3hMNytYU0lodTJEUkVjTlk1VkJ1K3UwYzl0cjJGb0NDY0VCZ0IvU0tDSnhJWW5HakpyZDJvbzRpNXlBU2w2cXRaa0RDcWtHcnNnenFOR3ArUzczb0IvQjVibnB2blJ1SzdZNzJ6VWY5WGcvZFBaUFdYQmI1Kzd0WElsNUJCN2tzaUhpUWVrWGFuTEYrVi85ZDdsVEk1bi95d3RITkpDV0JmVTU3cS9HNGFhNDRsSUhock1ZVFlZdDQwcFFQTVBoR25idHBPbWxSSW01elZGN256OGVFME5jSHo5SFlHelgyb0xBWXV3VjB3M3RraDJUMjl3THlKWjBvL0EzOERhU3BwSE9BV21KSXlUTDRRL2IxRmhBa1Q1YkRON3lrSmUwcVR0TDhGNUh6VGNkckhlNXovVzRpelh3N1ZuazJZY0hMcTRIaEdKL0o2RWFhTWdyTnBqODBWQVF3bUdIZkFaSGpsdXFEbnVsNjU1Y21jaVlpYWVIRDBhKzZGSXlhNDVXMURDejJXSWJtOUdNTEwyY2s4TVcxZGlVNGZVRUJGT3QwMmphUnl3MlVidXNjbEhsc1FPKzQ5R0ZDeTdyQVJiUWU4Y1FIYWg3S3cwYU54NWZQTGlwMCtkK2hieGpMRmlxeVhyS2xmbFJIaU9DbWt4ZEhuS1U4MFNDZWg2TmtlWVNYVTlKMEoybnhqS1pKc1YwYytQODRpWlFFakNnV2tZNWhTVXc1WW1GUEVUNlRUbDdLVEVvRlhQa2RwaTFxcGpibjVValdFd1R2dTdadGZHdUZMOTBjdGQ2T0tjQXFtaTN2dFpBVm9za2JLZlJYcVh4c29DUnJOeDE1dVVCZjlYK3ZSS0RjZXVqM0RPYmovTFUwNkVFYWVhWEt3NGt1ZVFhdDFURlk3MXlDZUk3K21peGlBaUFlY2hKeXNzSWNueXpqbnFwQzE1ODdLcktIc3FoSEVyUTNuSjI0WFNXYkhwa1gzbnozUHJzZEt6MDA0eXRBVEQyMDVtcHZDakI2ZnllWmI2ZXpYT1BuTDZJN2VibU9NbFFaeUp3MzdjK0wvdk5GTWczQXBRenMyb0FPNG1nYnpSYWc0R1BERHROeFpjZGFJRTZLOUdVUlFTSDRFdXBVTmtsUW1EN25DYWNRc1hhYzYzWHVWYzVTaThIbGlVdDI5cVVUN3l6ZjZBU0VNRW1QTzF5ME5aR1RlamZ5ZEZaeXp6Q25XVTlOQ0RncFc4WFZMaGVTbUJqKzBYU0F0Rk13ZkxzSTVYSjk0NDd1UXJObFlxVENQRDVSVzdDNldoNmkwNWxuNDB2eTIwbmZQL0tKeEZmenFnTXl0Y1hUQkk1TXVnTFBRMXkwSnNzQnhRVXI1QlFrdWVYUW1ISXAwc0ZuTEJOU001bTI0YS9hY1BEZUVpWng1SDNPcnRtS01reXVWQktxRGRNRjM4VTh5UWdRNDdrdk5kUWpVWndkQ1h2Tm9MdnRXSVhEeWFEaFhkK0JiQXp2RGt3V2lXRlhRUzFGSXMrdnAzM24vVm5NalI1Q2ZON1JLUzJCaDZWVHRVZ3c4MzAvckJoYnBKbUJUVzJ0eEl2Vk5Ja29ZRitVb1NFbng4Zkd4QXBWTEpJMTBDY1l6cFFORG51QVhSelJMQzNIQy9IdVFndGdJak5ZVFZkaUlaa2s3Mjg5Umx0aXZXaS9tV2tQSk9Ua0Z6SFZPUks2WldMbXl4Z3lHWElWeThBT1FuNU1jSzNNYnhaUzU4cVZKNGVFaVI3NVhwcDJHSlhORnNETlBiVThmUlNDVW5wTEdSYVRleTVrbGhjRkRsWEkxaHlHMktUY3B1SEh1R3U5V1FDVnBPaHZ0NTZJMzJjNGpiMU5KVkVabEFQM2tzRnlOYmI3Y3d6OFRFcEhmREFyQnhidFFjSnF2MHNlQjRGT1VwVmI4d0xZNzl5RXFxZnpObGJMbkxtUllvenBHekFSZzQ4a29OdDVmUm12azVGczF1ME9sWlVMSE5FcXJkNTAzb3BWRkY1cmZnUllHcUxyZW9ObTRudEdEYTh4ZFk1dG1ONVNlWGVUU2ZaRklKUXpsV3FGaUJDNzk4NEZ2ZkJtNTU3WHpWMlBiYlBzTWhCM3VmM081NytQZEgySkdxT25nbCthSnZLN2tPK2l3TzAwblpyQWdrRlJWbmp4cXRUaGs2T1ptcDh5bHlrQ3V2dDIzbGRrOWFRZktOZWpkMFBKRHNyMFRGcWQ0MnNsQWRwaUJTS1ExUmNPRm9FaGo2ZE5odElLSzRUY2Z4TVJwYmk1VXpob2lCWlcrUXoyM2ZWK1k0Vmd1NUVBZTFZWFJiWVdDaC8zaGZNUEx0Mm83UTZUS0tURGhhbzE1UW9LYk1rL3YrQjQ1K0E4aHJFL1BSL1BJUGM5NUM4emh6ZWVEZ2lheWErR2JKSzdUMzUxN25helNxQU5wMnJFUEZ0TWJ2UEhWenVJSklDMVA5d1lDMUswd1g1L01ZbTVITlRXdTJ4MUI0OW5xeTloK09GWG5aMjE2SzJEcVVONDlWYStsMzcyU1VydW1RaUVkTGc2T2JGdCs0dmNlWStJa0FZR3E2VldVWmUyQkNhR0M0MzVqNFE0Y2EzbnZ2aFJUTWZmYklvNGZPTzNsTkxhYVVOV0FpQUxkM0JjQnUyQ3JuMXh1T2xUeGZsSURwTHVHcEtibjJ1QjhFejFRcFpKY1dob2dIRU5IQWZVVzhuRVA3NWxPMTlQbzBnQVhxeDY2ZTh6K3VIbDBVRURuS1pMS3BPRjhhOXhaS2s1OWlJV0tHVDByZ0h6Z3hwS2RsQ3NidlJ6dkNqWllwWllCUU5OcUZVcGp4ZUg0dVdJMDlyM215bFlYc3VwQXRyRDRtclhWL0t5Vkx0TUpMSWJweEdBWG1EVDZlcjd3VGNwRW95ZkhrUzdSdWIzNzlKL3N0UmdkQnExZUR0Q3pnMS95Q3RoZU1kbm92eWdSWjdWSUpnUE1EaDl5NVB6clpvTWlvZkpKSU81OUhmY0ZIU29zUm1DYnNPblp6ZlVKamZpMGF3YncxQ2VMUjAzallocTllYkpVclkxdGpkd1RaeUt1Sm4vL05jSklBZU03ZVY4T1FKcjBtYTdoY3RZdnpya0V0V3ovTkpwdC9JeStNOWtEekFOVjRiV2pWZUwwY1lydzNsd2M5cFpGN1FOOGh4RWttZmhITCtWcnptZVBtRVhGV3FZVWsrSktXbktHWXR2MVR5T2g5SzA2YXJYY2IzcGZGeXZIK3dYSkxhdUZXZk0wejVFRytucGJSUVBJNzRnbE1qMEp3blkxaGNrWG9lczAwd2l3S3hWYjJncnMzWUdqVzJMaXpkeGt0WFl6dlZ1T1VnNkRMVSthbDhlOWtzNXRDVytPbm81Qmp3U1QxbGs4MVFIVVNvTWgwUjZrcHQ1b2Y3cjNNcjcvRk90VzhLN01HY3hHRWRGNE93UUNzNmVQTTNRcnpmSGxGUGlEUmV4WkxmWDBscUdmRUFVNTNqUlJFU0dQQk1mSyszNGpDbTBBdG5KUkxSZ2xadVBOREc4ZmtPQ21ObEYzS282emo1eDBOWmFlMDY3YnIwQ0hueTR2TUlja0VLQ1RGZG1zTm10SzJrWllXU0UwVTBkdGRJZEx3b3FFaUtFRUl2K2NySWd6dVRyTDQ0MjVWM1RVNmpabml1YXJ4WHlPKzcxUkRsSElEc2J6UGp6bG1XZ2JFalFpODA0UVlicUV1NVArN29GcHJ4bHFheGVVMExWZVBMZFVaOVZ6enVUQ083a0pzOEdzOFQvYm14L204Sy80bGNOR2RndDF2dlVqODc4eWVTckhmSVNJMkxuV2FMdVl5WmpTWjhXZHN0RjAwVk9IeEUzVFJLWEw0ZURXaFltckpMRkpsYmZrUmplSkNNMVR5ZFNpK1ZZOVRWcXdXUnBEcnpoL2tTazZPTGYyY1htbnhodnFyZmROT0Z3SEt2ZGJuUCt2aCs2K09mMDM4SEYyVi9JTW1QZkx2d0IvbkRuL2h5MWZNSHZlOGJsLy80dVIzWS9aZi8raG12QVNxUE5YYnBtcU9oL3pLRzNXa1ovaGNjOW52ODg4Yy8vdkYvSDY5QmFnVjVEZVhENnd4UlQxZFI0TmkxZnpwNjVWOEVyU2RnMEhMTDkvemx2NGhISC94eTZDVHZkRkp0aHU3eTVOYkhuRUcrMS85K2tYLy8rZXozRDNUT24venhpRG8vZDlMNGRiajFmSmN6dGl3N1BtVmF2RkRuT2o1TnB6MmNYSG51ZWhXYThvbHM3dG8vL1I4N1MxbkQzbHdBQUE9PSJ9 -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["id"],"name":[1],"type":["dbl"],"align":["right"]},{"label":["title"],"name":[2],"type":["chr"],"align":["left"]},{"label":["author"],"name":[3],"type":["chr"],"align":["left"]},{"label":["text"],"name":[4],"type":["chr"],"align":["left"]},{"label":["label"],"name":[5],"type":["dbl"],"align":["right"]}],"data":[{"1":"0","2":"House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It","3":"Darrell Lucus","4":"House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It By Darrell Lucus on October 30, 2016 Subscribe Jason Chaffetz on the stump in American Fork, Utah ( image courtesy Michael Jolley, available under a Creative Commons-BY license) \\nWith apologies to Keith Olbermann, there is no doubt who the Worst Person in The World is this week–FBI Director James Comey. But according to a House Democratic aide, it looks like we also know who the second-worst person is as well. It turns out that when Comey sent his now-infamous letter announcing that the FBI was looking into emails that may be related to Hillary Clinton’s email server, the ranking Democrats on the relevant committees didn’t hear about it from Comey. They found out via a tweet from one of the Republican committee chairmen. \\nAs we now know, Comey notified the Republican chairmen and Democratic ranking members of the House Intelligence, Judiciary, and Oversight committees that his agency was reviewing emails it had recently discovered in order to see if they contained classified information. Not long after this letter went out, Oversight Committee Chairman Jason Chaffetz set the political world ablaze with this tweet. FBI Dir just informed me, \"The FBI has learned of the existence of emails that appear to be pertinent to the investigation.\" Case reopened \\n— Jason Chaffetz (@jasoninthehouse) October 28, 2016 \\nOf course, we now know that this was not the case . Comey was actually saying that it was reviewing the emails in light of “an unrelated case”–which we now know to be Anthony Weiner’s sexting with a teenager. But apparently such little things as facts didn’t matter to Chaffetz. The Utah Republican had already vowed to initiate a raft of investigations if Hillary wins–at least two years’ worth, and possibly an entire term’s worth of them. Apparently Chaffetz thought the FBI was already doing his work for him–resulting in a tweet that briefly roiled the nation before cooler heads realized it was a dud. \\nBut according to a senior House Democratic aide, misreading that letter may have been the least of Chaffetz’ sins. That aide told Shareblue that his boss and other Democrats didn’t even know about Comey’s letter at the time–and only found out when they checked Twitter. “Democratic Ranking Members on the relevant committees didn’t receive Comey’s letter until after the Republican Chairmen. In fact, the Democratic Ranking Members didn’ receive it until after the Chairman of the Oversight and Government Reform Committee, Jason Chaffetz, tweeted it out and made it public.” \\nSo let’s see if we’ve got this right. The FBI director tells Chaffetz and other GOP committee chairmen about a major development in a potentially politically explosive investigation, and neither Chaffetz nor his other colleagues had the courtesy to let their Democratic counterparts know about it. Instead, according to this aide, he made them find out about it on Twitter. \\nThere has already been talk on Daily Kos that Comey himself provided advance notice of this letter to Chaffetz and other Republicans, giving them time to turn on the spin machine. That may make for good theater, but there is nothing so far that even suggests this is the case. After all, there is nothing so far that suggests that Comey was anything other than grossly incompetent and tone-deaf. \\nWhat it does suggest, however, is that Chaffetz is acting in a way that makes Dan Burton and Darrell Issa look like models of responsibility and bipartisanship. He didn’t even have the decency to notify ranking member Elijah Cummings about something this explosive. If that doesn’t trample on basic standards of fairness, I don’t know what does. \\nGranted, it’s not likely that Chaffetz will have to answer for this. He sits in a ridiculously Republican district anchored in Provo and Orem; it has a Cook Partisan Voting Index of R+25, and gave Mitt Romney a punishing 78 percent of the vote in 2012. Moreover, the Republican House leadership has given its full support to Chaffetz’ planned fishing expedition. But that doesn’t mean we can’t turn the hot lights on him. After all, he is a textbook example of what the House has become under Republican control. And he is also the Second Worst Person in the World. About Darrell Lucus \\nDarrell is a 30-something graduate of the University of North Carolina who considers himself a journalist of the old school. An attempt to turn him into a member of the religious right in college only succeeded in turning him into the religious right's worst nightmare--a charismatic Christian who is an unapologetic liberal. His desire to stand up for those who have been scared into silence only increased when he survived an abusive three-year marriage. You may know him on Daily Kos as Christian Dem in NC . Follow him on Twitter @DarrellLucus or connect with him on Facebook . Click here to buy Darrell a Mello Yello. Connect","5":"1"},{"1":"1","2":"FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart","3":"Daniel J. Flynn","4":"Ever get the feeling your life circles the roundabout rather than heads in a straight line toward the intended destination? [Hillary Clinton remains the big woman on campus in leafy, liberal Wellesley, Massachusetts. Everywhere else votes her most likely to don her inauguration dress for the remainder of her days the way Miss Havisham forever wore that wedding dress.  Speaking of Great Expectations, Hillary Rodham overflowed with them 48 years ago when she first addressed a Wellesley graduating class. The president of the college informed those gathered in 1969 that the students needed “no debate so far as I could ascertain as to who their spokesman was to be” (kind of the like the Democratic primaries in 2016 minus the   terms unknown then even at a Seven Sisters school). “I am very glad that Miss Adams made it clear that what I am speaking for today is all of us —  the 400 of us,” Miss Rodham told her classmates. After appointing herself Edger Bergen to the Charlie McCarthys and Mortimer Snerds in attendance, the    bespectacled in granny glasses (awarding her matronly wisdom —  or at least John Lennon wisdom) took issue with the previous speaker. Despite becoming the first   to win election to a seat in the U. S. Senate since Reconstruction, Edward Brooke came in for criticism for calling for “empathy” for the goals of protestors as he criticized tactics. Though Clinton in her senior thesis on Saul Alinsky lamented “Black Power demagogues” and “elitist arrogance and repressive intolerance” within the New Left, similar words coming out of a Republican necessitated a brief rebuttal. “Trust,” Rodham ironically observed in 1969, “this is one word that when I asked the class at our rehearsal what it was they wanted me to say for them, everyone came up to me and said ‘Talk about trust, talk about the lack of trust both for us and the way we feel about others. Talk about the trust bust.’ What can you say about it? What can you say about a feeling that permeates a generation and that perhaps is not even understood by those who are distrusted?” The “trust bust” certainly busted Clinton’s 2016 plans. She certainly did not even understand that people distrusted her. After Whitewater, Travelgate, the vast   conspiracy, Benghazi, and the missing emails, Clinton found herself the distrusted voice on Friday. There was a load of compromising on the road to the broadening of her political horizons. And distrust from the American people —  Trump edged her 48 percent to 38 percent on the question immediately prior to November’s election —  stood as a major reason for the closing of those horizons. Clinton described her vanquisher and his supporters as embracing a “lie,” a “con,” “alternative facts,” and “a   assault on truth and reason. ” She failed to explain why the American people chose his lies over her truth. “As the history majors among you here today know all too well, when people in power invent their own facts and attack those who question them, it can mark the beginning of the end of a free society,” she offered. “That is not hyperbole. ” Like so many people to emerge from the 1960s, Hillary Clinton embarked upon a long, strange trip. From high school Goldwater Girl and Wellesley College Republican president to Democratic politician, Clinton drank in the times and the place that gave her a degree. More significantly, she went from idealist to cynic, as a comparison of her two Wellesley commencement addresses show. Way back when, she lamented that “for too long our leaders have viewed politics as the art of the possible, and the challenge now is to practice politics as the art of making what appears to be impossible possible. ” Now, as the big woman on campus but the odd woman out of the White House, she wonders how her current station is even possible. “Why aren’t I 50 points ahead?” she asked in September. In May she asks why she isn’t president. The woman famously dubbed a “congenital liar” by Bill Safire concludes that lies did her in —  theirs, mind you, not hers. Getting stood up on Election Day, like finding yourself the jilted bride on your wedding day, inspires dangerous delusions.","5":"0"},{"1":"2","2":"Why the Truth Might Get You Fired","3":"Consortiumnews.com","4":"Why the Truth Might Get You Fired October 29, 2016 \\nThe tension between intelligence analysts and political policymakers has always been between honest assessments and desired results, with the latter often overwhelming the former, as in the Iraq War, writes Lawrence Davidson. \\nBy Lawrence Davidson \\nFor those who might wonder why foreign policy makers repeatedly make bad choices, some insight might be drawn from the following analysis. The action here plays out in the United States, but the lessons are probably universal. \\nBack in the early spring of 2003, George W. Bush initiated the invasion of Iraq. One of his key public reasons for doing so was the claim that the country’s dictator, Saddam Hussein, was on the verge of developing nuclear weapons and was hiding other weapons of mass destruction. The real reason went beyond that charge and included a long-range plan for “regime change” in the Middle East. President George W. Bush and Vice President Dick Cheney receive an Oval Office briefing from CIA Director George Tenet. Also present is Chief of Staff Andy Card (on right). (White House photo) \\nFor our purposes, we will concentrate on the belief that Iraq was about to become a hostile nuclear power. Why did President Bush and his close associates accept this scenario so readily? \\nThe short answer is Bush wanted, indeed needed, to believe it as a rationale for invading Iraq. At first he had tried to connect Saddam Hussein to the 9/11 attacks on the U.S. Though he never gave up on that stratagem, the lack of evidence made it difficult to rally an American people, already fixated on Afghanistan, to support a war against Baghdad. \\nBut the nuclear weapons gambit proved more fruitful, not because there was any hard evidence for the charge, but because supposedly reliable witnesses, in the persons of exiled anti-Saddam Iraqis (many on the U.S. government’s payroll ), kept telling Bush and his advisers that the nuclear story was true. \\nWhat we had was a U.S. leadership cadre whose worldview literally demanded a mortally dangerous Iraq, and informants who, in order to precipitate the overthrow of Saddam, were willing to tell the tale of pending atomic weapons. The strong desire to believe the tale of a nuclear Iraq lowered the threshold for proof . Likewise, the repeated assertions by assumed dependable Iraqi sources underpinned a nationwide U.S. campaign generating both fear and war fever. \\nSo the U.S. and its allies insisted that the United Nations send in weapons inspectors to scour Iraq for evidence of a nuclear weapons program (as well as chemical and biological weapons). That the inspectors could find no convincing evidence only frustrated the Bush administration and soon forced its hand. \\nOn March 19, 2003, Bush launched the invasion of Iraq with the expectation was that, once in occupation of the country, U.S. inspectors would surely find evidence of those nukes (or at least stockpiles of chemical and biological weapons). They did not. Their Iraqi informants had systematically lied to them. \\nSocial and Behavioral Sciences to the Rescue? \\nThe various U.S. intelligence agencies were thoroughly shaken by this affair, and today, 13 years later, their directors and managers are still trying to sort it out – specifically, how to tell when they are getting “true” intelligence and when they are being lied to. Or, as one intelligence worker has put it, we need “ help to protect us against armies of snake oil salesmen. ” To that end the CIA et al. are in the market for academic assistance. Ahmed Chalabi, head of the Iraqi National Congress, a key supplier of Iraqi defectors with bogus stories of hidden WMD. \\nA “partnership” is being forged between the Office of the Director of National Intelligence (ODNI), which serves as the coordinating center for the sixteen independent U.S. intelligence agencies, and the National Academies of Sciences, Engineering and Medicine . The result of this collaboration will be a “ permanent Intelligence Community Studies Board” to coordinate programs in “social and behavioral science research [that] might strengthen national security .” \\nDespite this effort, it is almost certain that the “social and behavioral sciences” cannot give the spy agencies what they want – a way of detecting lies that is better than their present standard procedures of polygraph tests and interrogations. But even if they could, it might well make no difference, because the real problem is not to be found with the liars. It is to be found with the believers. \\nThe Believers \\nIt is simply not true, as the ODNI leaders seem to assert, that U.S. intelligence agency personnel cannot tell, more often than not, that they are being lied to. This is the case because there are thousands of middle-echelon intelligence workers, desk officers, and specialists who know something closely approaching the truth – that is, they know pretty well what is going on in places like Afghanistan, Iraq, Syria, Libya, Israel, Palestine and elsewhere. Director of National Intelligence James Clapper (right) talks with President Barack Obama in the Oval Office, with John Brennan and other national security aides present. (Photo credit: Office of Director of National Intelligence) \\nTherefore, if someone feeds them “snake oil,” they usually know it. However, having an accurate grasp of things is often to no avail because their superiors – those who got their appointments by accepting a pre-structured worldview – have different criterion for what is “true” than do the analysts. \\nListen to Charles Gaukel, of the National Intelligence Council – yet another organization that acts as a meeting ground for the 16 intelligence agencies. Referring to the search for a way to avoid getting taken in by lies, Gaukel has declared, “ We’re looking for truth. But we’re particularly looking for truth that works. ” Now what might that mean? \\nI can certainly tell you what it means historically. It means that for the power brokers, “truth” must match up, fit with, their worldview – their political and ideological precepts. If it does not fit, it does not “work.” So the intelligence specialists who send their usually accurate assessments up the line to the policy makers often hit a roadblock caused by “group think,” ideological blinkers, and a “we know better” attitude. \\nOn the other hand, as long as what you’re selling the leadership matches up with what they want to believe, you can peddle them anything: imaginary Iraqi nukes, Israel as a Western-style democracy, Saudi Arabia as an indispensable ally, Libya as a liberated country, Bashar al-Assad as the real roadblock to peace in Syria, the Strategic Defense Initiative (SDI) aka Star Wars, a world that is getting colder and not warmer, American exceptionalism in all its glory – the list is almost endless. \\nWhat does this sad tale tell us? If you want to spend millions of dollars on social and behavioral science research to improve the assessment and use of intelligence, forget about the liars. What you want to look for is an antidote to the narrow-mindedness of the believers – the policymakers who seem not to be able to rise above the ideological presumptions of their class – presumptions that underpin their self-confidence as they lead us all down slippery slopes. \\nIt has happened this way so often, and in so many places, that it is the source of Shakespeare’s determination that “what is past, is prelude.” Our elites play out our destinies as if they have no free will – no capacity to break with structured ways of seeing. Yet the middle-echelon specialists keep sending their relatively accurate assessments up the ladder of power. Hope springs eternal.","5":"1"},{"1":"3","2":"15 Civilians Killed In Single US Airstrike Have Been Identified","3":"Jessica Purkiss","4":"Videos 15 Civilians Killed In Single US Airstrike Have Been Identified The rate at which civilians are being killed by American airstrikes in Afghanistan is now higher than it was in 2014 when the US was engaged in active combat operations.   Photo of Hellfire missiles being loaded onto a US military Reaper drone in Afghanistan by Staff Sgt. Brian Ferguson/U.S. Air Force. \\nThe Bureau has been able to identify 15 civilians killed in a single US drone strike in Afghanistan last month – the biggest loss of civilian life in one strike since the attack on the Medecins Sans Frontieres hospital (MSF) last October. \\nThe US claimed it had conducted a “counter-terrorism” strike against Islamic State (IS) fighters when it hit Nangarhar province with missiles on September 28. But the next day the United Nations issued an unusually rapid and strong statement saying the strike had killed 15 civilians and injured 13 others who had gathered at a house to celebrate a tribal elder’s return from a pilgrimage to Mecca. \\nThe Bureau spoke to a man named Haji Rais who said he was the owner of the house that was targeted. He said 15 people were killed and 19 others injured, and provided their names (listed below). The Bureau was able to independently verify the identities of those who died. \\nRais’ son, a headmaster at a local school, was among them. Another man, Abdul Hakim, lost three of his sons in the attack. \\nRais said he had no involvement with IS and denied US claims that IS members had visited his house before the strike. He said: “I did not even speak to those sort of people on the phone let alone receiving them in my house.” \\nThe deaths amount to the biggest confirmed loss of civilian life in a single American strike in Afghanistan since the attack on the MSF hospital in Kunduz last October, which killed at least 42 people. \\nThe Nangarhar strike was not the only US attack to kill civilians in September. The Bureau’s data indicates that as many as 45 civilians and allied soldiers were killed in four American strikes in Afghanistan and Somalia that month. \\nOn September 18 a pair of strikes killed eight Afghan policemen in Tarinkot, the capital of Urozgan provice. US jets reportedly hit a police checkpoint, killing one officer, before returning to target first responders. The use of this tactic – known as a “double-tap” strike – is controversial because they often hit civilian rescuers. \\nThe US told the Bureau it had conducted the strike against individuals firing on and posing a threat to Afghan forces. The email did not directly address the allegations of Afghan policemen being killed. \\nAt the end of the month in Somalia, citizens burnt US flags on the streets of the north-central city of Galcayo after it emerged a drone attack may have unintentionally killed 22 Somali soldiers and civilians. The strike occurred on the same day as the one in Nangarhar. \\nIn both the Somali and Afghan incidents, the US at first denied that any non-combatants had been killed. It is now investigating both the strikes in Nangarhar and Galcayo. \\nThe rate at which civilians are being killed by American airstrikes in Afghanistan is now higher than it was in 2014 when the US was engaged in active combat operations. Name","5":"1"},{"1":"4","2":"Iranian woman jailed for fictional unpublished story about woman stoned to death for adultery","3":"Howard Portnoy","4":"Print \\nAn Iranian woman has been sentenced to six years in prison after Iran’s Revolutionary Guard searched her home and found a notebook that contained a fictional story she’d written about a woman who was stoned to death, according to the Eurasia Review . \\nGolrokh Ebrahimi Iraee, 35, is the wife of political prisoner Arash Sadeghi, 36, who is serving a 19-year prison sentence for being a human rights activist, the publication reported. \\n“When the intelligence unit of the Revolutionary Guards came to arrest her husband, they raided their apartment – without a warrant – and found drafts of stories that Ebrahimi Iraee had written,” the article stated. \\n“One of the confiscated drafts was a story about stoning women to death for adultery – never published, never presented to anyone,” the article stated. “The narrative followed the story of a protagonist that watched a movie about stoning of women under Islamic law for adultery.","5":"1"},{"1":"5","2":"Jackie Mason: Hollywood Would Love Trump if He Bombed North Korea over Lack of Trans Bathrooms (Exclusive Video) - Breitbart","3":"Daniel Nussbaum","4":"In these trying times, Jackie Mason is the Voice of Reason. [In this week’s exclusive clip for Breitbart News, Jackie discusses the looming threat of North Korea, and explains how President Donald Trump could win the support of the Hollywood left if the U. S. needs to strike first.  “If he decides to bomb them, the whole country will be behind him, because everybody will realize he had no choice and that was the only thing to do,” Jackie says. “Except the Hollywood left. They’ll get nauseous. ” “[Trump] could win the left over, they’ll fall in love with him in a minute. If he bombed them for a better reason,” Jackie explains. “Like if they have no transgender toilets. ” Jackie also says it’s no surprise that Hollywood celebrities didn’t support Trump’s strike on a Syrian airfield this month. “They were infuriated,” he says. “Because it might only save lives. That doesn’t mean anything to them. If it only saved the environment, or climate change! They’d be the happiest people in the world. ” Still, Jackie says he’s got nothing against Hollywood celebs. They’ve got a tough life in this country. Watch Jackie’s latest clip above.   Follow Daniel Nussbaum on Twitter: @dznussbaum","5":"0"}],"options":{"columns":{"min":{},"max":[10],"total":[5]},"rows":{"min":[10],"max":[10],"total":[6]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>The dataset has 5 variables (columns) and 20800 observations (rows)</p>
+<p>After reading the dataset, we find out that variable ID, author and text do not contain any relevant information for our prediction. Hence, we will remove column 1,3 and 4 which represent these data.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5ERiA8LSByYXdERltjKC0xLC0zLC00KV0gJT4lIG5hLm9taXRcbmhlYWQoY2xlYW5ERilcbmBgYCJ9 -->
+<pre class="r"><code>cleanDF &lt;- rawDF[c(-1,-3,-4)] %&gt;% na.omit
 head(cleanDF)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
+<!-- rnb-source-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibnJvdyI6NiwibmNvbCI6Miwic3VtbWFyeSI6eyJBIHRpYmJsZSI6WyI2IHggMiJdfX0sInJkZiI6Ikg0c0lBQUFBQUFBQUJ1MlloM01iV1IzSFgydzVqdVZMNHRqRTJNa2xlWEpSWWx1U1N5VEg1ZVNpWmxYYnVWd3VDY054cksyVnZaZlZybG10N0ROelFDZ0ROOGN3d0FEWDZBeTlkNGJlTzBNWk9nenQ2TzJHM29uNXJDM2RYZlFmTU9Oa1BvbjA5Tjd2L2Q3djkvMzk5czNlR0x0NDJuM1JMWVNvRnk3KzFqZndVZXlOTGc2UGhFYUVjTlh4YlEvalRjNy90ek9yalEvT1lJc3pUWWdyemcvbmsyYTVwTXFZV3BTeldsNmRrQmY0b3VXTkI2N2NaOHY0dW1ySWM2b3FvMlpSM1dTb0pMT3FiYXVXUEcvWW1pN1RTc2swWkhSVktSUlUrNG55cGcxVnRkVzhUTm1WWGM4a3NwZm01eWRrVXROMXhkcVVVVjB6Yk5Qd3lZaTJJaStZUmNXUXpucWx1Rll1U2IrTVdLcG1MeWxXZGJubnd1cW10RmRWZVpOVnRsZGxUbHRadGVXY2FzdExabGttTkV2TlZ5Wk9ENGRrVkZ2WGRFMHhTakxEYm80WHVLNFpLN29xejUvamJGYkp0clRMcWt3cTY2cU1xQndzbFZjNVJVRjd5TXd0S1VzeE1DRTN0bDI3VGRFY093WFRrZ1Z0MmRaTVE5RmwyVmdyTCtsYWFaVmZTcmJKb1pRbHMyeFhsakJpOElOdHlyeXE0TEt6VnNtWGRVSzJXZG5ranJTeWZGbFRaYzZKSGFFeGRYMXp3elR6eEtPczUyWFdYTjgrYjNGTmFnV1p4Rld6dUlUSmVkUENYc2EwVkVVeXhaSlp6RWl6d0Z6bnpCRjJzMHl6V0pLbjRyY3Y2K1dTaHBtYlNhalpkMDFnaFRqZ0pILzZEK0thUDlYdnRmOC8vT2NhTlRVWVNsRXRWWlJVVngyME5WdFhxMTkwWlVuVmE1WTFXZVpHb0xwMHY3UDBDdjlzYlczOXE5YitzcTZVcXZhcmcrNjhZaXVCZ3NYNldydUdFbEMyRTRUSXNWc1hZSEFVTnVGSjhCejROUHlZTlI3NExYTTY0RGo0NERTTVFSemVEQitIYjJHcmVjZWVVemoxeks5ZmhCdmhCY0M4K2cvQmwzQm1IekRYaFQxWEx6alZ4OTZ1cDhKOWdLMEc3RFFNd0RQaGVmQlcrREo4bjNROFJZakdROUFLK05PWWhqVzRCOTRIbndCOGJ2eWJFUHZ3YzE4S0ZMZ2ZIb0MvRUFQNlFCTStOckcrS1FaM3c2L2hyMFRPaWQ0SjREZjNDaEFuTi9iZDZNR05mKzR0SVpwUGdoOUNNQVhZYUQ0THpHdkc1K2IvQ25IZFkrSGw4R3A0TzN3U1BnTVBrczR6TUFGejhIb2dQdnZKNjRFOThIejRQUHhTaUlOaHdQN0JXYmdOdmdlY3E0WDR0WkR1RnZMVE1nNlBnMmNEZTdSd2hrTkJ5QUUrSEhvYVBCZGVERytFTjhGN2dGZ2MrcU1Rclp5MTlTSncxdFluQVBOYVh3WnZnYy9DandDZjI5aXI3UklReXpaRTFVYSsybDRLNzRlZkFERi9GTDRjNWd5SEQ4TXhpTUFyNGF0Q3RKUFRkdXFwWGNJcFFIUHRhS1FkZSsyL0UrTFJSMkFKK056UkNDU2lnN0VPZE5LUmhmT0F6RHZRU3NjYjRBdUFuanArRG4rQ2Z3dlIyUVBUZ0ozT0luQ2VUc3Ftay9OMGN2Wk9kTlRKbVkrNEFIMGRtUVQwY3dRN1I1OE03d1hzSHYwbW9MWHJ2ZEFQRitBeDhIZ3dBUzBjSTRmSFhndms3dGpuNEtkQ0hMOGVxSXZqN0h2OFdYQXZmRkNJRTBjQkd5ZCtKWVRrc3lRMjhnYkFWN2tBTjhPN2dMeDRLRlpQRjdDM0p3TzNBcm4zdkFySWlRZU5lN0RwK1JTUUh3OTY3T0k4WGN6dEtnUDY2V0p1RnpIditpNlF1KzdyQUwxMWM4WnVZdGZOMmJxSmN3OGE2V0h2SG1xczV5dEM5RktQdmRSM0wvcnA1WHk5K04vTCtielV0SmM4ZUtrbEx6WHRQUWZFMG9zdjNxOERXdlgrQjlEOVNYSis4aFpncjVOM3dyZmhIMEtjNGp5blp1RGR3Sm8rdE5CSEhmZFJTMzJEOERvZzluM29yWitIY3o5NjZ5ZjIvV2lrbjlqM1cwQi82bitHRUFPY2RRQU5EandkaU5zQU5nYytBTVRFeHpvZk92SHhtNC9lNDBOL1BuTHYrN3NRL25tZ0p2emt6MDkrL09qWC94cEF3LzRmQ2hFZ3pnRnlGMkNmd084QlhRMFN0OEVFdkJEb0U0UFlHa1FuZzlUaDRGVWhoc2pYRUZvZG9oOE5jWlloNm0rWUM4UHdPdHdCMVA4STV4NUI1eVAwbnRQc2Nmb1hRRXlDNkR4SVV3NFNoeUNhQ05KUGd0UlY4QlZBRG9QMHdxQXpEMjJIMmdITmhwZ1RvaWVFQ3NCREk4U1pRK1I2bE45SDBmOG8raHVsRjQ2U20xRjY0Wm1EMEFma2Vhd2JOb0FZamhHWE1mWVlveWVORWZleEw4TFBnRnlPMDIvRzBkMDQrUituaDQzVFZ5YndlNExlTWZFMmVDZVE3MGwwTVltdms4Ui84bXRBN201d0lEWmg5Z3VqZ3pBNkNMTW1qTGJEUEZmQzFFcVlYanRGSHFiSTRSUzVtQ0ozVTR4UE9lUEVmQnE3MDUxQXo1OG1MelBFWmdiOXpaRFRHWHJaREh2T3ZBUHdhK2JQUXN6eVRKa2RCclE1U3grYzVmeXoxR09FbUVTb3R3ajFGQ0ZtRWZ5SmtOOElXb3ZTUTZQa0pZcVdvM2w0Q2RDbm85UldsQjRSUTU4eDRoMGozakg2Ukl6K0dFTXpNZUlSUXdNeFloREQ3eGoreHFtdk9QMDRqdDl4WWh5bkR1UDA2dmdQZ0hna3FNOEUvUytCbmhQMGdRVDlOb0VQaVk4QXZUN0JHUkwvRkdLT1BlWllPNGVtNTlCS0VsMGs2WmRKOUo1a3IrUkg0V05DcE5CNGltZEhDanNwTHF1cEQ4TjNnR2QybXZPbTZaVnB0SkVtVG1ucUwwMWUwK1FyUTcxbjZEY1o0cERobVpIaFBKbTdnUDB5K0puNURhQzFMUHJOMG5PejVDaUxEckk4MDdJdkFuekk4cnpQZmdPSVVhNGUwRnlPNTJ5T0dPV1lueU9XT1hwdkRwM2xlRmJuMEZrTyt6bTBtT01aTjA5YzU2T3dET1IrbnY2OWdJMEZZclBBL0FWNjBRTDdMQkNQUmVLMmlIWVg2Wk9MUEhzV3FjRkZhdllzODgvMjdseHM2dWgvNHNIS1piMTZ5VG1ZVnd1cXhaMzNWdWNpYTZ6VS9PeGFVa3BxWld6Lzl2ak83ZW5xdzJPNzE2TGRhOUh1dFdqM1dyUjdMZHE5RnUxZWkzYXZSZjlQMTZLSDdqUmk1MDdqWEpOY1d6VnZpRnhtVWJNcmQ1NnJOZStJR3MwMTV3VVI3YUxPZVEzYVVMTjBqMVV6MEZJMm5EZFZlZi95YXRtNDdCOE9pWjBMUTlXSHFqOTdIL0c1N2hIWHQ1YnRUWFpzN1ZXTkZjMm9lVFcyOCtXQVpXNXN2eEVMckhHcHE3NzRkRE5hQ3RpbXJWVG51WmROdlRwU09lRC9BSytaTGxML0ZRQUEifQ== -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["title"],"name":[1],"type":["chr"],"align":["left"]},{"label":["label"],"name":[2],"type":["dbl"],"align":["right"]}],"data":[{"1":"House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It","2":"1"},{"1":"FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart","2":"0"},{"1":"Why the Truth Might Get You Fired","2":"1"},{"1":"15 Civilians Killed In Single US Airstrike Have Been Identified","2":"1"},{"1":"Iranian woman jailed for fictional unpublished story about woman stoned to death for adultery","2":"1"},{"1":"Jackie Mason: Hollywood Would Love Trump if He Bombed North Korea over Lack of Trans Bathrooms (Exclusive Video) - Breitbart","2":"0"}],"options":{"columns":{"min":{},"max":[10],"total":[2]},"rows":{"min":[10],"max":[10],"total":[6]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>The variable label is numeric value with 0: reliable and 1: unreliable. As it indicates whether the tittle belongs to the category “Reliable” or “Unreliable”, we will convert it into a factor variable.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5ERiRsYWJlbCA8LSBmYWN0b3IoY2xlYW5ERiRsYWJlbCwgbGV2ZWxzID0gYyhcIjBcIiwgXCIxXCIpLCBsYWJlbHMgPSBjKFwiUmVsaWFibGVcIiwgXCJVbnJlbGlhYmxlXCIpKSAlPiUgcmVsZXZlbChcIlJlbGlhYmxlXCIpXG5jbGFzcyhjbGVhbkRGJGxhYmVsKVxuYGBgIn0= -->
+<pre class="r"><code>cleanDF$label &lt;- factor(cleanDF$label, levels = c(&quot;0&quot;, &quot;1&quot;), labels = c(&quot;Reliable&quot;, &quot;Unreliable&quot;)) %&gt;% relevel(&quot;Reliable&quot;)
+class(cleanDF$label)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwiZmFjdG9yXCJcbiJ9 -->
+<pre><code>[1] &quot;factor&quot;</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>For visually inspect, we create a wordcloud for two variables.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuVW5yZWxpYWJsZSA8LSBjbGVhbkRGICU+JSBmaWx0ZXIobGFiZWwgPT0gXCJVbnJlbGlhYmxlXCIpXG5SZWxpYWJsZSA8LSBjbGVhbkRGICU+JSBmaWx0ZXIobGFiZWwgPT0gXCJSZWxpYWJsZVwiKVxuXG53b3JkY2xvdWQoVW5yZWxpYWJsZSR0aXRsZSwgbWF4LndvcmRzID0gMjAsIHNjYWxlID0gYyg0LCAwLjgpLCBjb2xvcnM9IGMoXCJpbmRpYW5yZWQxXCIsXCJpbmRpYW5yZWQyXCIsXCJpbmRpYW5yZWQzXCIsXCJpbmRpYW5yZWRcIikpXG5gYGAifQ== -->
+<pre class="r"><code>Unreliable &lt;- cleanDF %&gt;% filter(label == &quot;Unreliable&quot;)
+Reliable &lt;- cleanDF %&gt;% filter(label == &quot;Reliable&quot;)
 
-&lt;!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibnJvdyI6NiwibmNvbCI6Miwic3VtbWFyeSI6eyJBIHRpYmJsZSI6IjYgeCAyIn19LCJyZGYiOiJINHNJQUFBQUFBQUFCdTJZaDFNYjJSM0huMEVZSTg0R1EwekFQdHRQRk5tQUpKcUVLU2VLR3FnQlBwL1BkaWFYeTRKV3NPZlZMbG10NE1oY0VxZE1jbk9aVEpKSmNpMDlrOTU3SnIzM1RNcWtKNU4yNmUwbXZjZmtzeURkbmZVZlpBYlBmSXowOXIzZis3M2Y3L3Y3N1J2ZEdMczQ0cjdvRmtMVUNoZlUxdkZSN0k4dURRMkhob1Z3MWZCdEgwOGFuTCszTTZ1VkQ4NWdzek5OaUN2T2cvUHpacW1veXBoYWtMTmFUcDJRRi9paTVZd0hydHhueS9pR2FzaHpxaXFqWmtIZFlxZ29NNnB0cTVZOGI5aWFMbE5LMFRSa2RFM0o1MVg3aWZLbVRWVzExWnhNMnVWZHp5UXlseFlXSnVTOHB1dUt0U1dqdW1iWXB1R1RFVzFWWGpBTGlpR2Q5VXBodlZTVWZobXhWTTFlVnF6S2NzK0Z0UzFwcjZueUpxdGtyOG1zdHJwbXl6blZscGZNa2t4b2xwb3JUNXdlQ3Ntb3RxSHBtbUlVWlpyZEhDOXdYVE5XZFZXZVA4ZlpyS0p0YVpkVk9hOXNxREtpY3JCa1R1VVVlZTBoTTdja0xjWEFoTnpjY2UwMlJYUHM1RTFMNXJVVld6TU5SWmNsWTcyMHJHdkZOWjRVYlpOREtjdG15UzR2WWNUZ2dXM0tuS3Jnc3JOV3laVjBRclpWM3VTT2xMSnlXVk5sMW9rZG9URjFmV3ZUTkhQRW82VG5aTWJjMkRsdllWMXFlVG1QcTJaaEdaTUxwb1c5dEdtcGltU0tKVE9Za1dhZXVjNlpJK3htbVdhaEtFL0hiMS9SUzBVTk16ZVRVTFAzbXNBS2NjaEovdlFmeERYL0t0K3Ivejc4N3hvMTFSbEtRUzJXbFZSVEdiUTFXMWNyWDNSbFdkV3JsalZZNW1hZ3N2U2dzL1FLLzIxdmIvK3IydjZLcmhRcjlpdUQ3cHhpSzRHOHhmcHF1NFlTVUhZU2hNaXhXeE5nY0JTMjRFbndIUGcwL0pnMUh2Z3RjOXJoQlBoZ0JNWWdEbStHajhPM3NOVzRhODhwbkZybTF5N0JqZkFDWUY3dGgrQkxPSE1BbU92Q25xc0huT3BqYjlkVDRUN0FWaDEyNnZyaG1mQThlQ3Q4R2I1UE9wNGlSUDFoYUFIOHFVL0JPdHdENzROUEFEN1gvMDJJQS9oNUlBa0szQThQd0YrSUFYMmdBUjhiV044UWc3dmgxL0JYSXVkRTd5VHd6TDBLeE1tTmZUZDZjT09mZTF1SXhsUGdoeEJNQVRZYXp3THpHdkc1OGI5Q1hQZFllRG04R3Q0T240VFB3SU9rOHd4TXdCeThIb2pQUWZKNmFCODhIejRQdnhTaUtRelliNXFGMitCN3dMbWFpVjh6Nlc0bVA4M2o4RGg0TnJCSE0yYzRISVFzNE1QaHA4Rno0Y1h3Um5nVHZBZUl4ZUUvQ3RIQ1dWc3VBbWR0ZVFJd3IrVmw4QmI0TFB3SThMbVZ2Vm92QWJGc1JWU3Q1S3YxcGZCKytBa1E4MGZoeXhIT2NPUUlISWNJdkJLK0trUWJPVzJqbnRva25BWTAxNFpHMnJEWDlqc2hIbjBVbG9IUDdmVkFJdG9aYTBjbjdSazREOGk4SGEyMHZ3RytBT2lwL2Vmd0ovaTNFQjNkTUEzWTZTZ0E1K21nYkRvNFR3ZG43MEJISFp6NXFBdlExOUZKUUQ5SHNYUHN5ZkJld082eGJ3SmF1OTRMZlhBQkhnT1BCeFBRd25GeWVQeTFRTzZPZnc1K0tzU0o2NEc2T01HK0o1NEY5OElIaFRoNURMQng4bGRDU0Q1TFlpTnZBSHlWaTNBenZBdklpNGRpOVhRQ2UzdlNjQ3VRZTgrcmdKeDQwTGdIbTU1UEFmbnhvTWRPenRQSjNNNFNvSjlPNW5ZUzg4N3ZBcm5ydWc3UVd4ZG43Q0oyWFp5dGl6aDNvNUZ1OXU2bXhycS9Ja1FQOWRoRGZmZWdueDdPMTRQL1BaelBTMDE3eVlPWFd2SlMwOTV6UUN5OStPTDlPcUJWNzM4QTNaOGk1NmR1QWZZNmRTZDhHLzRoeEduT2Mzb0czZzJzNlVVTHZkUnhMN1hVT3dDdkEyTGZpOTc2ZURuM29iYytZdCtIUnZxSWZaOEY5S2UrWndqUnoxbjcwV0QvMDRHNDlXT3ovd05BVEh5czg2RVRIODk4OUI0Zit2T1JlOS9maGZBdkFEWGhKMzkrOHVOSHYvN1hBQnIyLzFDSUFIRU9rTHNBK3dSK0QraHFnTGdOSk9DRlFKOFl3TllBT2htZ0RnZXVDakZJdmdiUjZpRDlhSkN6REZKL1Exd1loamJnRHFEK2h6bjNNRG9mcHZlTXNNZklMNENZQk5GNWtLWWNKQTVCTkJHa253U3BxK0FyZ0J3RzZZVkJaeDdhRHJVQm1nMHhKMFJQQ09XQmwwYUlNNGZJOVNqUFI5SC9LUG9icFJlT2twdFJldUdaSnVnRjhqeldCWnRBRE1lSXl4aDdqTkdUeG9qNzJCZmhaMEF1eCtrMzQraHVuUHlQMDhQRzZTc1QrRDFCNzVoNEc3d1R5UGNrdXBqRTEwbmlQL2sxSUhjM09CQ2JNUHVGMFVFWUhZUlpFMGJiWWQ0cllXb2xUSytkSWc5VDVIQ0tYRXlSdXluR3A1eHhZajZOM2VrT29PZFBrNWNaWWpPRC9tYkk2UXk5YklZOVo5NEIrRFh6WnlGbWVhZk1EZ0hhbktVUHpuTCtXZW94UWt3aTFGdUVlb29Rc3dqK1JNaHZCSzFGNmFGUjhoSkZ5OUVjdkFUbzAxRnFLMHFQaUtIUEdQR09FZThZZlNKR2Y0eWhtUmp4aUtHQkdER0k0WGNNZitQVVY1eCtITWZ2T0RHT1U0ZHhlblg4QjBBOEV0Um5ndjZYUU04SitrQ0NmcHZBaDhSSGdGNmY0QXlKZndveHh4NXpySjFEMDNOb1pSNWR6Tk12NTlIN1BIdk5meFErSmtRU2pTZDVkeVN4aytTeW12d3dmQWQ0WjZjNGI0cGVtVUliS2VLVW92NVM1RFZGdnRMVWU1cCtreVlPYWQ0WmFjNlR2Z3ZZTDQyZjZkOEFXc3VnM3d3OU4wT09NdWdnd3pzdDh5TEFod3p2Kzh3M2dCaGxhd0hOWlhuUFpvbFJsdmxaWXBtbDkyYlJXWlozZFJhZFpiR2ZSWXRaM25FTHhIVWhDaXRBN2hmbzM0dllXQ1EyaTh4ZnBCY3RzczhpOFZnaWJrdG9kNGsrdWNTN1o0a2FYS0ptenpML2JNL3V4YWFHL2ljZUxGL1dLNWVjcHB5YVZ5M3V2TGM2RjFsanRlcXhhMWtwcXVXeGd6dmp1N2VucXcrUDdWMkw5cTVGZTllaXZXdlIzclZvNzFxMGR5M2F1eGI5UDEyTEhyclRpTjA3alhOTmNtMVgvVUxrTWd1YVhiN3pYSzM2amFqZVhIZCtJS0pkMURnL2c5WlZMZDFuVlEwMGxRem5sNnFjZjJXdFpGejJqNGpkKzBMRmhZbzcreC94dWVZUnQ3Zm1uVDEyVGUxWGpWWE5xUHBsYlBmTEljdmMzUGxCTExET25hN3l1NmViMFdMQU5tMmxNcys5WXVxVmtmTDUvZ2Rhd2ZyVy9oVUFBQT09In0= --&gt;
-
-&lt;div data-pagedtable=&quot;false&quot;&gt;
-  &lt;script data-pagedtable-source type=&quot;application/json&quot;&gt;
-{&quot;columns&quot;:[{&quot;label&quot;:[&quot;title&quot;],&quot;name&quot;:[1],&quot;type&quot;:[&quot;chr&quot;],&quot;align&quot;:[&quot;left&quot;]},{&quot;label&quot;:[&quot;label&quot;],&quot;name&quot;:[2],&quot;type&quot;:[&quot;dbl&quot;],&quot;align&quot;:[&quot;right&quot;]}],&quot;data&quot;:[{&quot;1&quot;:&quot;House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It&quot;,&quot;2&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart&quot;,&quot;2&quot;:&quot;0&quot;},{&quot;1&quot;:&quot;Why the Truth Might Get You Fired&quot;,&quot;2&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;15 Civilians Killed In Single US Airstrike Have Been Identified&quot;,&quot;2&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;Iranian woman jailed for fictional unpublished story about woman stoned to death for adultery&quot;,&quot;2&quot;:&quot;1&quot;},{&quot;1&quot;:&quot;Jackie Mason: Hollywood Would Love Trump if He Bombed North Korea over Lack of Trans Bathrooms (Exclusive Video) - Breitbart&quot;,&quot;2&quot;:&quot;0&quot;}],&quot;options&quot;:{&quot;columns&quot;:{&quot;min&quot;:{},&quot;max&quot;:[10],&quot;total&quot;:[2]},&quot;rows&quot;:{&quot;min&quot;:[10],&quot;max&quot;:[10],&quot;total&quot;:[6]},&quot;pages&quot;:{}}}
-  &lt;/script&gt;
-&lt;/div&gt;
-
-&lt;!-- rnb-frame-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-The variable label is numeric value with 0: reliable and 1: unreliable. As it indicates whether the tittle belongs to the category &quot;Reliable&quot; or &quot;Unreliable&quot;, we will convert it into a factor variable.
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY2xlYW5ERiRsYWJlbCA8LSBmYWN0b3IoY2xlYW5ERiRsYWJlbCwgbGV2ZWxzID0gYyhcXDBcXCwgXFwxXFwpLCBsYWJlbHMgPSBjKFxcUmVsaWFibGVcXCwgXFxVbnJlbGlhYmxlXFwpKSAlPiUgcmVsZXZlbChcXFJlbGlhYmxlXFwpXG5jbGFzcyhyYXdERiRsYWJlbClcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-cleanDF$label &lt;- factor(cleanDF$label, levels = c(\0\, \1\), labels = c(\Reliable\, \Unreliable\)) %&gt;% relevel(\Reliable\)
-class(rawDF$label)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiWzFdIFxcbnVtZXJpY1xcXG4ifQ== --&gt;
-</code></pre>
-<p>[1] <br />
-</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-For visually inspect, we create a wordcloud for two variables. 
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuVW5yZWxpYWJsZSA8LSBjbGVhbkRGICU+JSBmaWx0ZXIobGFiZWwgPT0gXFxVbnJlbGlhYmxlXFwpXG5SZWxpYWJsZSA8LSBjbGVhbkRGICU+JSBmaWx0ZXIobGFiZWwgPT0gXFxSZWxpYWJsZVxcKVxuXG53b3JkY2xvdWQoVW5yZWxpYWJsZSR0aXRsZSwgbWF4LndvcmRzID0gMjAsIHNjYWxlID0gYyg0LCAwLjgpLCBjb2xvcnM9IGMoXFxpbmRpYW5yZWQxXFwsXFxpbmRpYW5yZWQyXFwsXFxpbmRpYW5yZWQzXFwsXFxpbmRpYW5yZWRcXCkpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-Unreliable &lt;- cleanDF %&gt;% filter(label == \Unreliable\)
-Reliable &lt;- cleanDF %&gt;% filter(label == \Reliable\)
-
-wordcloud(Unreliable$title, max.words = 20, scale = c(4, 0.8), colors= c(\indianred1\,\indianred2\,\indianred3\,\indianred\))</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== --&gt;
-</code></pre>
-<p>transformation drops documentstransformation drops documents</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-plot-begin --&gt;
-
-&lt;img src=&quot;data:image/png;base64,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&quot; /&gt;
-
-&lt;!-- rnb-plot-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxud29yZGNsb3VkKFJlbGlhYmxlJHRpdGxlLCBtYXgud29yZHMgPSAyMCwgc2NhbGUgPSBjKDQsIDAuOCksIGNvbG9ycz0gYyhcXGxpZ2h0c3RlZWxibHVlMVxcLFxcbGlnaHRzdGVlbGJsdWUyXFwsXFxsaWdodHN0ZWVsYmx1ZTNcXCxcXGxpZ2h0c3RlZWxibHVlXFwpKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-wordcloud(Reliable$title, max.words = 20, scale = c(4, 0.8), colors= c(\lightsteelblue1\,\lightsteelblue2\,\lightsteelblue3\,\lightsteelblue\))</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== --&gt;
-</code></pre>
-<p>transformation drops documentstransformation drops documents</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-plot-begin --&gt;
-
-&lt;img src=&quot;data:image/png;base64,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&quot; /&gt;
-
-&lt;!-- rnb-plot-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-There is no significant difference between the number of reliable vs unreliable articles released. Based on the wordclouds, it is likely that the name of former US president his rival in the 2016 election would take place in many unreliable titles. While in the reliable side, &quot;new&quot;,&quot;york&quot; and &quot;times&quot; also appeared to be mentioned multiple times.
-
-
-## Data Preparation
-
-We create a corpus aims to refer to a collection of text document
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxucmF3Q29ycHVzIDwtIENvcnB1cyhWZWN0b3JTb3VyY2UoY2xlYW5ERiR0aXRsZSkpXG5pbnNwZWN0KHJhd0NvcnB1c1sxOjNdKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-rawCorpus &lt;- Corpus(VectorSource(cleanDF$title))
+wordcloud(Unreliable$title, max.words = 20, scale = c(4, 0.8), colors= c(&quot;indianred1&quot;,&quot;indianred2&quot;,&quot;indianred3&quot;,&quot;indianred&quot;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== -->
+<pre><code>transformation drops documentstransformation drops documents</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-plot-begin eyJoZWlnaHQiOjMzMy4xMjczLCJ3aWR0aCI6NTM5LCJzaXplX2JlaGF2aW9yIjowLCJjb25kaXRpb25zIjpbXX0= -->
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAhsAAAFNCAMAAACexl34AAACNFBMVEXNVVXNVXTNVZHNXFzNXHrNXJbNdHTNdJHNdK/NenrNepbNerHNka/NkcrNlszVVVXVVZHVXFzVdFXVdHTVdJHVelzVenrVepbVka/VkcrVlpbVlrHVlszVr+XVsczVsebeVVXeXFzedFXedHTeelzeenrelnrelpbelrHer8resczeysreyuXeyv/ezP/ndFXnelznkXTnlnrnr5HnsZbnyuXnzMznzObn5eXn5f/n5v/uY2PuY4DuY5vugIDugJvugLXukVXukXTullzulnrum87ur3Tur5HusZbusbHu5eXu5f/u5ubu5v/u/+bu///xY2PxgGPxgIDxgJvxm5vxm7Xxm87xtbXxtc7xtef0Y2P0gGP0gID0m4D0m5v0m7X0tbX0tc70zuf0zv/3gGP3m4D3m5v3r3T3r5H3sXr3ypH3yq/3zJb3zLH3zOb3zs73zuf35cr35f/35sz35ub35v/35+f35//3/+X3///5m2P5m4D5tYD5tZv5tbX5zpv5zrX5zs75zuf55+f55//5/+f5///8tYD8tZv8zpv8zrX858785+f85//8/+b8////amr/aoX/ap7/hWr/hYX/hZ7/hbj/nmr/noX/np7/nrj/ntD/uIX/uJ7/uLj/uND/uOf/ypH/zJb/zpv/0J7/0Lj/0ND/0Of/0P//5a//5cr/5rH/5sz/5ub/57X/57j/587/59D/5+f/5////8r//8z//87//9D//+X//+b//+f///8xDep3AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAWyElEQVR4nO2d/X9k1V3Hs+wWsZVWrFIqYlvEZ5AWtbVO3IrYWrVKuoi2CwWh1IoUS32qiYBWqmmhyp1MyCTMhA3sLBspMCShm925/5z3PH/Pufc7T5ns3Hvu5/3DZu6deyezr/POefye711IAShmYd5fAJQWuAE44AbggBuAA24ADrgBOOAG4IAbgANuAA64ATjgBuCAG4ADbgAOuAE44AbggBuAA24ADrgBOOAG4IAbgANuAA64ATjgBuCAG4ADbgAOuAE44AbggBuAA24ADrgBOOAG4IAbgANuAA64ATjgBuCAG4ADbgAOuAE44AbggBuAA24ADrgBOOAG4IAbgANuAA64ATjgBuCA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" /></p>
+<!-- rnb-plot-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxud29yZGNsb3VkKFJlbGlhYmxlJHRpdGxlLCBtYXgud29yZHMgPSAyMCwgc2NhbGUgPSBjKDQsIDAuOCksIGNvbG9ycz0gYyhcImxpZ2h0c3RlZWxibHVlMVwiLFwibGlnaHRzdGVlbGJsdWUyXCIsXCJsaWdodHN0ZWVsYmx1ZTNcIixcImxpZ2h0c3RlZWxibHVlXCIpKVxuYGBgIn0= -->
+<pre class="r"><code>wordcloud(Reliable$title, max.words = 20, scale = c(4, 0.8), colors= c(&quot;lightsteelblue1&quot;,&quot;lightsteelblue2&quot;,&quot;lightsteelblue3&quot;,&quot;lightsteelblue&quot;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== -->
+<pre><code>transformation drops documentstransformation drops documents</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-plot-begin eyJoZWlnaHQiOjMzMy4xMjczLCJ3aWR0aCI6NTM5LCJzaXplX2JlaGF2aW9yIjowLCJjb25kaXRpb25zIjpbXX0= -->
+<p><img src="data:image/png;base64,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" /></p>
+<!-- rnb-plot-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>There is no significant difference between the number of reliable vs unreliable articles released. Based on the wordclouds, it is likely that the name of former US president his rival in the 2016 election would take place in many unreliable titles. While in the reliable side, “new”,“york” and “times” also appeared to be mentioned multiple times.</p>
+</div>
+<div id="data-preparation" class="section level2">
+<h2>Data Preparation</h2>
+<p>We create a corpus aims to refer to a collection of text document</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucmF3Q29ycHVzIDwtIENvcnB1cyhWZWN0b3JTb3VyY2UoY2xlYW5ERiR0aXRsZSkpXG5pbnNwZWN0KHJhd0NvcnB1c1sxOjNdKVxuYGBgIn0= -->
+<pre class="r"><code>rawCorpus &lt;- Corpus(VectorSource(cleanDF$title))
 inspect(rawCorpus[1:3])</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gSG91c2UgRGVtIEFpZGU6IFdlIERpZG7DouKCrOKEonQgRXZlbiBTZWUgQ29tZXnDouKCrOKEonMgTGV0dGVyIFVudGlsIEphc29uIENoYWZmZXR6IFR3ZWV0ZWQgSXRcblsyXSBGTFlOTjogSGlsbGFyeSBDbGludG9uLCBCaWcgV29tYW4gb24gQ2FtcHVzIC0gQnJlaXRiYXJ0ICAgICAgICAgICAgICAgICAgICAgICAgICBcblszXSBXaHkgdGhlIFRydXRoIE1pZ2h0IEdldCBZb3UgRmlyZWQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 --&gt;
-</code></pre>
-<p>&lt;<SimpleCorpus>&gt; Metadata: corpus specific: 1, document level (indexed): 0 Content: documents: 3</p>
-<p>[1] House Dem Aide: We Didnâ€™t Even See Comeyâ€™s Letter Until Jason Chaffetz Tweeted It [2] FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart<br />
-[3] Why the Truth Might Get You Fired</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-The corpus contains 20242 elements which matches with the number of rows in our dataset.
-We will also change everything to lowercase and remove numbers as these will contain litle information on whether an article is reliable or not
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY2xlYW5Db3JwdXMgPC0gcmF3Q29ycHVzICU+JSB0bV9tYXAodG9sb3dlcikgJT4lIHRtX21hcChyZW1vdmVOdW1iZXJzKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-cleanCorpus &lt;- rawCorpus %&gt;% tm_map(tolower) %&gt;% tm_map(removeNumbers)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== --&gt;
-</code></pre>
-<p>transformation drops documentstransformation drops documents</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-inspect(cleanCorpus[1:3])</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gaG91c2UgZGVtIGFpZGU6IHdlIGRpZG7DouKCrOKEonQgZXZlbiBzZWUgY29tZXnDouKCrOKEonMgbGV0dGVyIHVudGlsIGphc29uIGNoYWZmZXR6IHR3ZWV0ZWQgaXRcblsyXSBmbHlubjogaGlsbGFyeSBjbGludG9uLCBiaWcgd29tYW4gb24gY2FtcHVzIC0gYnJlaXRiYXJ0ICAgICAgICAgICAgICAgICAgICAgICAgICBcblszXSB3aHkgdGhlIHRydXRoIG1pZ2h0IGdldCB5b3UgZmlyZWQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 --&gt;
-</code></pre>
-<p>&lt;<SimpleCorpus>&gt; Metadata: corpus specific: 1, document level (indexed): 0 Content: documents: 3</p>
-<p>[1] house dem aide: we didnâ€™t even see comeyâ€™s letter until jason chaffetz tweeted it [2] flynn: hillary clinton, big woman on campus - breitbart<br />
-[3] why the truth might get you fired</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-We also remove stopwords, punctuation and whitespaces
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY2xlYW5Db3JwdXMgPC0gY2xlYW5Db3JwdXMgJT4lIHRtX21hcCh0b2xvd2VyKSAlPiUgdG1fbWFwKHJlbW92ZVdvcmRzLCBzdG9wd29yZHMoKSkgJT4lIHRtX21hcChyZW1vdmVQdW5jdHVhdGlvbilcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-cleanCorpus &lt;- cleanCorpus %&gt;% tm_map(tolower) %&gt;% tm_map(removeWords, stopwords()) %&gt;% tm_map(removePunctuation)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== --&gt;
-</code></pre>
-<p>transformation drops documentstransformation drops documentstransformation drops documents</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-inspect(cleanCorpus[1:3])</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gaG91c2UgZGVtIGFpZGUgIGRpZG7DouKCrOKEonQgZXZlbiBzZWUgY29tZXnDouKCrOKEonMgbGV0dGVyICBqYXNvbiBjaGFmZmV0eiB0d2VldGVkIFxuWzJdIGZseW5uIGhpbGxhcnkgY2xpbnRvbiBiaWcgd29tYW4gIGNhbXB1cyAgYnJlaXRiYXJ0ICAgICAgICAgICAgICAgICAgICAgXG5bM10gICB0cnV0aCBtaWdodCBnZXQgIGZpcmVkICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 --&gt;
-</code></pre>
-<p>&lt;<SimpleCorpus>&gt; Metadata: corpus specific: 1, document level (indexed): 0 Content: documents: 3</p>
-<p>[1] house dem aide didnâ€™t even see comeyâ€™s letter jason chaffetz tweeted [2] flynn hillary clinton big woman campus breitbart<br />
-[3] truth might get fired</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-Remove additional whitespace
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY2xlYW5Db3JwdXMgPC0gY2xlYW5Db3JwdXMgJT4lIHRtX21hcChzdHJpcFdoaXRlc3BhY2UpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-cleanCorpus &lt;- cleanCorpus %&gt;% tm_map(stripWhitespace)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== --&gt;
-</code></pre>
-<p>transformation drops documents</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-inspect(cleanCorpus[1:3])</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gaG91c2UgZGVtIGFpZGUgZGlkbsOi4oKs4oSidCBldmVuIHNlZSBjb21lecOi4oKs4oSicyBsZXR0ZXIgamFzb24gY2hhZmZldHogdHdlZXRlZCBcblsyXSBmbHlubiBoaWxsYXJ5IGNsaW50b24gYmlnIHdvbWFuIGNhbXB1cyBicmVpdGJhcnQgICAgICAgICAgICAgICAgICAgICBcblszXSAgdHJ1dGggbWlnaHQgZ2V0IGZpcmVkICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiJ9 --&gt;
-</code></pre>
-<p>&lt;<SimpleCorpus>&gt; Metadata: corpus specific: 1, document level (indexed): 0 Content: documents: 3</p>
-<p>[1] house dem aide didnâ€™t even see comeyâ€™s letter jason chaffetz tweeted [2] flynn hillary clinton big woman campus breitbart<br />
-[3] truth might get fired</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-Compare with the raw version
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxudGliYmxlKFJhdyA9IHJhd0NvcnB1cyRjb250ZW50WzE6M10sIENsZWFuID0gY2xlYW5Db3JwdXMkY29udGVudFsxOjNdKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-tibble(Raw = rawCorpus$content[1:3], Clean = cleanCorpus$content[1:3])</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibnJvdyI6MywibmNvbCI6Miwic3VtbWFyeSI6eyJBIHRpYmJsZSI6IjMgeCAyIn19LCJyZGYiOiJINHNJQUFBQUFBQUFCbDJTMzI3VE1CVEd2WFRkdEVwRGs1QzRQcnVuMVRhRWtIYkhNc2FHeG9UR3BtNlhibkxTR0J5N2NrNG81YXF2d2V2eEhxeWNPRGFDUkVweS92ZzcvbjZ5Yjg4ZlhvMGVSa0tJZ2RqbWR6RGtVT3lrbjQ1UFhwOElzWjF3dHNXZHZmYi9uVmM5NTZBdEhuaUpXTGVOKzB2YjFBam5XTUZibGVNcFREbFJ1Zm0xL2tudzdoc2ErSXdJcWExd3hhVWFycEVJSGR3YlVobyt5Tm9hU0V0WkZFZy80RzZKU0pqREZZVmQzMXhjUDk3Y25NS2wwbHE2RmFSYUdiTG1KWnlwT1V4dEpRMjBlbGt0bWhyR2NPWlEwVXk2S0QrY2xpdWdFdUhPTlZUQ1J6VXZDZDRqd2FOdDRFSTV6SHN3VjZXSHlSbEdNZ3prRVFSYmtKcEJzcjhndWdQNTRoR3lpRUFCSVRnNEt2VEtHQ2lELzZ6ekR6TzJ2L1Qyczg3N3JPZjhCWkMzWEhuTGM3WmNkSGIvTzVTaGtSWFdnU0VKeGNHdFhNWitxbEdhbm1qUDJlVWtDdmRiNFpvL204M21kMzk2cG1VZHA4ZmlLSmNrSjRWalBXZFBQY211WFpDeWhrVkplMWVHUGZHVzZ4VU9HdE02eWNkWjJaaXY0K09qZGdmZjc1NzlFQS8raVpOdXoyUVRaZzNEckIwMGMyVXdtdGR5aGpva3p4alpFMDhXamc4Z29uQzFucEFsR2RlTk1xdGp4Y09KcHo4M2NGckJKQU1BQUE9PSJ9 --&gt;
-
-&lt;div data-pagedtable=&quot;false&quot;&gt;
-  &lt;script data-pagedtable-source type=&quot;application/json&quot;&gt;
-{&quot;columns&quot;:[{&quot;label&quot;:[&quot;Raw&quot;],&quot;name&quot;:[1],&quot;type&quot;:[&quot;chr&quot;],&quot;align&quot;:[&quot;left&quot;]},{&quot;label&quot;:[&quot;Clean&quot;],&quot;name&quot;:[2],&quot;type&quot;:[&quot;chr&quot;],&quot;align&quot;:[&quot;left&quot;]}],&quot;data&quot;:[{&quot;1&quot;:&quot;House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It&quot;,&quot;2&quot;:&quot;house dem aide didn’t even see comey’s letter jason chaffetz tweeted&quot;},{&quot;1&quot;:&quot;FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart&quot;,&quot;2&quot;:&quot;flynn hillary clinton big woman campus breitbart&quot;},{&quot;1&quot;:&quot;Why the Truth Might Get You Fired&quot;,&quot;2&quot;:&quot;truth might get fired&quot;}],&quot;options&quot;:{&quot;columns&quot;:{&quot;min&quot;:{},&quot;max&quot;:[10],&quot;total&quot;:[2]},&quot;rows&quot;:{&quot;min&quot;:[10],&quot;max&quot;:[10],&quot;total&quot;:[3]},&quot;pages&quot;:{}}}
-  &lt;/script&gt;
-&lt;/div&gt;
-
-&lt;!-- rnb-frame-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-After cleaning up the text, we transform the messages to a matrix 
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY2xlYW5EVE0gPC0gY2xlYW5Db3JwdXMgJT4lIERvY3VtZW50VGVybU1hdHJpeFxuaW5zcGVjdChjbGVhbkRUTSlcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-cleanDTM &lt;- cleanCorpus %&gt;% DocumentTermMatrix
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gSG91c2UgRGVtIEFpZGU6IFdlIERpZG7igJl0IEV2ZW4gU2VlIENvbWV54oCZcyBMZXR0ZXIgVW50aWwgSmFzb24gQ2hhZmZldHogVHdlZXRlZCBJdFxuWzJdIEZMWU5OOiBIaWxsYXJ5IENsaW50b24sIEJpZyBXb21hbiBvbiBDYW1wdXMgLSBCcmVpdGJhcnQgICAgICAgICAgICAgICAgICAgICAgICAgIFxuWzNdIFdoeSB0aGUgVHJ1dGggTWlnaHQgR2V0IFlvdSBGaXJlZCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuIn0= -->
+<pre><code>&lt;&lt;SimpleCorpus&gt;&gt;
+Metadata:  corpus specific: 1, document level (indexed): 0
+Content:  documents: 3
+
+[1] House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It
+[2] FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart                          
+[3] Why the Truth Might Get You Fired                                                </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>The corpus contains 20242 elements which matches with the number of rows in our dataset. We will also change everything to lowercase and remove numbers as these will contain litle information on whether an article is reliable or not</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5Db3JwdXMgPC0gcmF3Q29ycHVzICU+JSB0bV9tYXAodG9sb3dlcikgJT4lIHRtX21hcChyZW1vdmVOdW1iZXJzKVxuYGBgIn0= -->
+<pre class="r"><code>cleanCorpus &lt;- rawCorpus %&gt;% tm_map(tolower) %&gt;% tm_map(removeNumbers)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== -->
+<pre><code>transformation drops documentstransformation drops documents</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKVxuYGBgIn0= -->
+<pre class="r"><code>inspect(cleanCorpus[1:3])</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gaG91c2UgZGVtIGFpZGU6IHdlIGRpZG7igJl0IGV2ZW4gc2VlIGNvbWV54oCZcyBsZXR0ZXIgdW50aWwgamFzb24gY2hhZmZldHogdHdlZXRlZCBpdFxuWzJdIGZseW5uOiBoaWxsYXJ5IGNsaW50b24sIGJpZyB3b21hbiBvbiBjYW1wdXMgLSBicmVpdGJhcnQgICAgICAgICAgICAgICAgICAgICAgICAgIFxuWzNdIHdoeSB0aGUgdHJ1dGggbWlnaHQgZ2V0IHlvdSBmaXJlZCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuIn0= -->
+<pre><code>&lt;&lt;SimpleCorpus&gt;&gt;
+Metadata:  corpus specific: 1, document level (indexed): 0
+Content:  documents: 3
+
+[1] house dem aide: we didn’t even see comey’s letter until jason chaffetz tweeted it
+[2] flynn: hillary clinton, big woman on campus - breitbart                          
+[3] why the truth might get you fired                                                </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>We also remove stopwords, punctuation and whitespaces</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5Db3JwdXMgPC0gY2xlYW5Db3JwdXMgJT4lIHRtX21hcCh0b2xvd2VyKSAlPiUgdG1fbWFwKHJlbW92ZVdvcmRzLCBzdG9wd29yZHMoKSkgJT4lIHRtX21hcChyZW1vdmVQdW5jdHVhdGlvbilcbmBgYCJ9 -->
+<pre class="r"><code>cleanCorpus &lt;- cleanCorpus %&gt;% tm_map(tolower) %&gt;% tm_map(removeWords, stopwords()) %&gt;% tm_map(removePunctuation)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzdHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== -->
+<pre><code>transformation drops documentstransformation drops documentstransformation drops documents</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKVxuYGBgIn0= -->
+<pre class="r"><code>inspect(cleanCorpus[1:3])</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gaG91c2UgZGVtIGFpZGUgIGRpZG7igJl0IGV2ZW4gc2VlIGNvbWV54oCZcyBsZXR0ZXIgIGphc29uIGNoYWZmZXR6IHR3ZWV0ZWQgXG5bMl0gZmx5bm4gaGlsbGFyeSBjbGludG9uIGJpZyB3b21hbiAgY2FtcHVzICBicmVpdGJhcnQgICAgICAgICAgICAgICAgICAgICBcblszXSAgIHRydXRoIG1pZ2h0IGdldCAgZmlyZWQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuIn0= -->
+<pre><code>&lt;&lt;SimpleCorpus&gt;&gt;
+Metadata:  corpus specific: 1, document level (indexed): 0
+Content:  documents: 3
+
+[1] house dem aide  didn’t even see comey’s letter  jason chaffetz tweeted 
+[2] flynn hillary clinton big woman  campus  breitbart                     
+[3]   truth might get  fired                                               </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Remove additional whitespace</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5Db3JwdXMgPC0gY2xlYW5Db3JwdXMgJT4lIHRtX21hcChzdHJpcFdoaXRlc3BhY2UpXG5gYGAifQ== -->
+<pre class="r"><code>cleanCorpus &lt;- cleanCorpus %&gt;% tm_map(stripWhitespace)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoidHJhbnNmb3JtYXRpb24gZHJvcHMgZG9jdW1lbnRzXG4ifQ== -->
+<pre><code>transformation drops documents</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKVxuYGBgIn0= -->
+<pre class="r"><code>inspect(cleanCorpus[1:3])</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiPDxTaW1wbGVDb3JwdXM+PlxuTWV0YWRhdGE6ICBjb3JwdXMgc3BlY2lmaWM6IDEsIGRvY3VtZW50IGxldmVsIChpbmRleGVkKTogMFxuQ29udGVudDogIGRvY3VtZW50czogM1xuXG5bMV0gaG91c2UgZGVtIGFpZGUgZGlkbuKAmXQgZXZlbiBzZWUgY29tZXnigJlzIGxldHRlciBqYXNvbiBjaGFmZmV0eiB0d2VldGVkIFxuWzJdIGZseW5uIGhpbGxhcnkgY2xpbnRvbiBiaWcgd29tYW4gY2FtcHVzIGJyZWl0YmFydCAgICAgICAgICAgICAgICAgICAgIFxuWzNdICB0cnV0aCBtaWdodCBnZXQgZmlyZWQgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuIn0= -->
+<pre><code>&lt;&lt;SimpleCorpus&gt;&gt;
+Metadata:  corpus specific: 1, document level (indexed): 0
+Content:  documents: 3
+
+[1] house dem aide didn’t even see comey’s letter jason chaffetz tweeted 
+[2] flynn hillary clinton big woman campus breitbart                     
+[3]  truth might get fired                                               </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Compare with the raw version</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudGliYmxlKFJhdyA9IHJhd0NvcnB1cyRjb250ZW50WzE6M10sIENsZWFuID0gY2xlYW5Db3JwdXMkY29udGVudFsxOjNdKVxuYGBgIn0= -->
+<pre class="r"><code>tibble(Raw = rawCorpus$content[1:3], Clean = cleanCorpus$content[1:3])</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-frame-begin eyJtZXRhZGF0YSI6eyJjbGFzc2VzIjpbInRibF9kZiIsInRibCIsImRhdGEuZnJhbWUiXSwibnJvdyI6MywibmNvbCI6Miwic3VtbWFyeSI6eyJBIHRpYmJsZSI6WyIzIHggMiJdfX0sInJkZiI6Ikg0c0lBQUFBQUFBQUJsMlMwVzdUTUJTR3ZYVGR0RXBEazVDNFBydW5GUlFocE4yeGpMR2hNYUd4cWR1bG01dzBCc2V1bkJOS3VlcHI4SHE4QnlzbmpvMGdpWlNjODl2LzhmOHB1VG03ZnpXNkh3a2hCbUtYNzhHUVM3R1hmbm81ZlQwVllqZmhib2YxZy9iOW5YYzk1YUlWajd4RmJOcUZ1d3ZiMUFobldNRmJsZU1KekxoUnVmbTErVW53N2hzYStJd0lxYTF3elZJTlYwaUVEdTRNS1EwZlpHME5wS1VzQ3FRZmNMdENKTXpoa3NLcGI4NnZIcTZ2VCtCQ2FTM2RHbEt0REZuekhFN1ZBbWEya2daYXY2eVdUUTFqT0hXb2FDNWR0Qi9QeWpWUWlYRHJHaXJobzFxVUJPK1I0TUUyY0s0YzVqMll5OUxENUF3akdRYnlDSUl0U00wZzJWOFEzWUY4OFFoWlJLQ0FFQks4S1BUYUdDaEQvcXpMRDNPT3YvTHhzeTc3dkpmOEdaQ1BYUG5JQzQ1Y2RISC8reWhESXl1c0EwTVN4TUdOWE1YMVZLTTBQZE9CczZ0Sk5CNjJ4ZzAvdHR2dDcvNzBUTXM2VG8vaUtKY2tKNFZqUDNlUFBjdStYWkt5aGsxSis2OE1lK1lkMXhPT0d0TW15Y2RaMlppdjQrbTBQY0d2ZDlkaHFBZi8xRWwzWnJJTnM0WmgxaDZhaFRJWXcyczVSeDJhSjR6c2lTZEx4eDhnb3JCYVQ4aVNqUHRHbWRWUjhYRGk4UTl1N2pvS0pBTUFBQT09In0= -->
+<div data-pagedtable="false">
+<script data-pagedtable-source type="application/json">
+{"columns":[{"label":["Raw"],"name":[1],"type":["chr"],"align":["left"]},{"label":["Clean"],"name":[2],"type":["chr"],"align":["left"]}],"data":[{"1":"House Dem Aide: We Didn’t Even See Comey’s Letter Until Jason Chaffetz Tweeted It","2":"house dem aide didn’t even see comey’s letter jason chaffetz tweeted"},{"1":"FLYNN: Hillary Clinton, Big Woman on Campus - Breitbart","2":"flynn hillary clinton big woman campus breitbart"},{"1":"Why the Truth Might Get You Fired","2":"truth might get fired"}],"options":{"columns":{"min":{},"max":[10],"total":[2]},"rows":{"min":[10],"max":[10],"total":[3]},"pages":{}}}
+  </script>
+</div>
+<!-- rnb-frame-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>After cleaning up the text, we transform the messages to a matrix</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY2xlYW5EVE0gPC0gY2xlYW5Db3JwdXMgJT4lIERvY3VtZW50VGVybU1hdHJpeFxuaW5zcGVjdChjbGVhbkRUTSlcbmBgYCJ9 -->
+<pre class="r"><code>cleanDTM &lt;- cleanCorpus %&gt;% DocumentTermMatrix
 inspect(cleanDTM)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiPDxEb2N1bWVudFRlcm1NYXRyaXggKGRvY3VtZW50czogMjAyNDIsIHRlcm1zOiAyNzgwNCk+PlxuTm9uLS9zcGFyc2UgZW50cmllczogMTcyNTY0LzU2MjYzNjAwNFxuU3BhcnNpdHkgICAgICAgICAgIDogMTAwJVxuTWF4aW1hbCB0ZXJtIGxlbmd0aDogNjJcbldlaWdodGluZyAgICAgICAgICA6IHRlcm0gZnJlcXVlbmN5ICh0ZilcblNhbXBsZSAgICAgICAgICAgICA6XG4gICAgICAgVGVybXNcbkRvY3MgICAgw6LigqzihKIgYnJlaXRiYXJ0IGNsaW50b24gZG9uYWxkIGhpbGxhcnkgbmV3IHRpbWVzIHRydW1wIHdpbGwgeW9ya1xuICAxMTQwICAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMCAgICAgMCAgICAgMCAgICAwICAgIDBcbiAgMTU4MDggMCAgICAgICAgIDAgICAgICAgMCAgICAgIDAgICAgICAgMCAgIDAgICAgIDAgICAgIDAgICAgMCAgICAwXG4gIDE3NTY1IDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAwICAgICAwICAgICAwICAgIDAgICAgMFxuICAxODAwNiAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMCAgICAgMCAgICAgMCAgICAwICAgIDBcbiAgMTk0MTUgMCAgICAgICAgIDAgICAgICAgMCAgICAgIDAgICAgICAgMCAgIDAgICAgIDAgICAgIDAgICAgMCAgICAwXG4gIDIwNDIgIDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAxICAgICAwICAgICAwICAgIDEgICAgMFxuICAzMTEgICAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMCAgICAgMCAgICAgMCAgICAwICAgIDBcbiAgMzMwNCAgMCAgICAgICAgIDAgICAgICAgMCAgICAgIDAgICAgICAgMCAgIDAgICAgIDAgICAgIDAgICAgMCAgICAwXG4gIDU2MTQgIDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAwICAgICAwICAgICAwICAgIDAgICAgMFxuICA4NzUwICAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMCAgICAgMCAgICAgMCAgICAwICAgIDBcbiJ9 --&gt;
-</code></pre>
-<p>&lt;&lt;DocumentTermMatrix (documents: 20242, terms: 27804)&gt;&gt; Non-/sparse entries: 172564/562636004 Sparsity : 100% Maximal term length: 62 Weighting : term frequency (tf) Sample : Terms Docs â€™ breitbart clinton donald hillary new times trump will york 1140 0 0 0 0 0 0 0 0 0 0 15808 0 0 0 0 0 0 0 0 0 0 17565 0 0 0 0 0 0 0 0 0 0 18006 0 0 0 0 0 0 0 0 0 0 19415 0 0 0 0 0 0 0 0 0 0 2042 0 0 0 0 0 1 0 0 1 0 311 0 0 0 0 0 0 0 0 0 0 3304 0 0 0 0 0 0 0 0 0 0 5614 0 0 0 0 0 0 0 0 0 0 8750 0 0 0 0 0 0 0 0 0 0</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-Dataset will be splitted into train and test sets
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIyBDcmVhdGUgc3BsaXQgaW5kaWNlc1xuc2V0LnNlZWQoMTIzNClcbnRyYWluSW5kZXggPC0gY3JlYXRlRGF0YVBhcnRpdGlvbihjbGVhbkRGJGxhYmVsLCBwID0gLjc1LCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsaXN0ID0gRkFMU0UsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRpbWVzID0gMSlcbmhlYWQodHJhaW5JbmRleClcbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-# Create split indices
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiPDxEb2N1bWVudFRlcm1NYXRyaXggKGRvY3VtZW50czogMjAyNDIsIHRlcm1zOiAyNzgwNCk+PlxuTm9uLS9zcGFyc2UgZW50cmllczogMTcyNTY0LzU2MjYzNjAwNFxuU3BhcnNpdHkgICAgICAgICAgIDogMTAwJVxuTWF4aW1hbCB0ZXJtIGxlbmd0aDogNjJcbldlaWdodGluZyAgICAgICAgICA6IHRlcm0gZnJlcXVlbmN5ICh0ZilcblNhbXBsZSAgICAgICAgICAgICA6XG4gICAgICAgVGVybXNcbkRvY3MgICAg4oCZIGJyZWl0YmFydCBjbGludG9uIGRvbmFsZCBoaWxsYXJ5IG5ldyB0aW1lcyB0cnVtcCB3aWxsXG4gIDExNDAgIDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAwICAgICAwICAgICAwICAgIDBcbiAgMTU4MDggMCAgICAgICAgIDAgICAgICAgMCAgICAgIDAgICAgICAgMCAgIDAgICAgIDAgICAgIDAgICAgMFxuICAxNzU2NSAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMCAgICAgMCAgICAgMCAgICAwXG4gIDE4MDA2IDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAwICAgICAwICAgICAwICAgIDBcbiAgMTk0MTUgMCAgICAgICAgIDAgICAgICAgMCAgICAgIDAgICAgICAgMCAgIDAgICAgIDAgICAgIDAgICAgMFxuICAyMDQyICAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMSAgICAgMCAgICAgMCAgICAxXG4gIDMxMSAgIDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAwICAgICAwICAgICAwICAgIDBcbiAgMzMwNCAgMCAgICAgICAgIDAgICAgICAgMCAgICAgIDAgICAgICAgMCAgIDAgICAgIDAgICAgIDAgICAgMFxuICA1NjE0ICAwICAgICAgICAgMCAgICAgICAwICAgICAgMCAgICAgICAwICAgMCAgICAgMCAgICAgMCAgICAwXG4gIDg3NTAgIDAgICAgICAgICAwICAgICAgIDAgICAgICAwICAgICAgIDAgICAwICAgICAwICAgICAwICAgIDBcbiAgICAgICBUZXJtc1xuRG9jcyAgICB5b3JrXG4gIDExNDAgICAgIDBcbiAgMTU4MDggICAgMFxuICAxNzU2NSAgICAwXG4gIDE4MDA2ICAgIDBcbiAgMTk0MTUgICAgMFxuICAyMDQyICAgICAwXG4gIDMxMSAgICAgIDBcbiAgMzMwNCAgICAgMFxuICA1NjE0ICAgICAwXG4gIDg3NTAgICAgIDBcbiJ9 -->
+<pre><code>&lt;&lt;DocumentTermMatrix (documents: 20242, terms: 27804)&gt;&gt;
+Non-/sparse entries: 172564/562636004
+Sparsity           : 100%
+Maximal term length: 62
+Weighting          : term frequency (tf)
+Sample             :
+       Terms
+Docs    ’ breitbart clinton donald hillary new times trump will
+  1140  0         0       0      0       0   0     0     0    0
+  15808 0         0       0      0       0   0     0     0    0
+  17565 0         0       0      0       0   0     0     0    0
+  18006 0         0       0      0       0   0     0     0    0
+  19415 0         0       0      0       0   0     0     0    0
+  2042  0         0       0      0       0   1     0     0    1
+  311   0         0       0      0       0   0     0     0    0
+  3304  0         0       0      0       0   0     0     0    0
+  5614  0         0       0      0       0   0     0     0    0
+  8750  0         0       0      0       0   0     0     0    0
+       Terms
+Docs    york
+  1140     0
+  15808    0
+  17565    0
+  18006    0
+  19415    0
+  2042     0
+  311      0
+  3304     0
+  5614     0
+  8750     0</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Dataset will be splitted into train and test sets</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBDcmVhdGUgc3BsaXQgaW5kaWNlc1xuc2V0LnNlZWQoMTIzNClcbnRyYWluSW5kZXggPC0gY3JlYXRlRGF0YVBhcnRpdGlvbihjbGVhbkRGJGxhYmVsLCBwID0gLjc1LCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBsaXN0ID0gRkFMU0UsIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHRpbWVzID0gMSlcbmhlYWQodHJhaW5JbmRleClcbmBgYCJ9 -->
+<pre class="r"><code># Create split indices
 set.seed(1234)
 trainIndex &lt;- createDataPartition(cleanDF$label, p = .75, 
                                   list = FALSE, 
                                   times = 1)
 head(trainIndex)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiICAgICBSZXNhbXBsZTFcblsxLF0gICAgICAgICAxXG5bMixdICAgICAgICAgMlxuWzMsXSAgICAgICAgIDNcbls0LF0gICAgICAgICA1XG5bNSxdICAgICAgICAxMFxuWzYsXSAgICAgICAgMTFcbiJ9 --&gt;
-</code></pre>
-<pre><code> Resample1</code></pre>
-<p>[1,] 1 [2,] 2 [3,] 3 [4,] 5 [5,] 10 [6,] 11</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIERGXG50cmFpbkRGIDwtIGNsZWFuREZbdHJhaW5JbmRleCwgXVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-# Apply split indices to DF
-trainDF &lt;- cleanDF[trainIndex, ]</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-output-begin eyJkYXRhIjoiVGhlIGBpYCBhcmd1bWVudCBvZiBgYFtgKClgIGNhbid0IGJlIGEgbWF0cml4IGFzIG9mIHRpYmJsZSAzLjAuMC5cbkNvbnZlcnQgdG8gYSB2ZWN0b3IuXG5UaGlzIHdhcm5pbmcgaXMgZGlzcGxheWVkIG9uY2UgZXZlcnkgOCBob3Vycy5cbkNhbGwgYGxpZmVjeWNsZTo6bGFzdF93YXJuaW5ncygpYCB0byBzZWUgd2hlcmUgdGhpcyB3YXJuaW5nIHdhcyBnZW5lcmF0ZWQuXG4ifQ== --&gt;
-</code></pre>
-<p>The <code>i</code> argument of `<code>[</code>()<code>can&#39;t be a matrix as of tibble 3.0.0. Convert to a vector. This warning is displayed once every 8 hours. Call</code>lifecycle::last_warnings()` to see where this warning was generated.</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxudGVzdERGIDwtIGNsZWFuREZbLXRyYWluSW5kZXgsIF1cblxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgICBSZXNhbXBsZTFcblsxLF0gICAgICAgICAxXG5bMixdICAgICAgICAgMlxuWzMsXSAgICAgICAgIDNcbls0LF0gICAgICAgICA1XG5bNSxdICAgICAgICAxMFxuWzYsXSAgICAgICAgMTFcbiJ9 -->
+<pre><code>     Resample1
+[1,]         1
+[2,]         2
+[3,]         3
+[4,]         5
+[5,]        10
+[6,]        11</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIERGXG50cmFpbkRGIDwtIGNsZWFuREZbdHJhaW5JbmRleCwgXVxudGVzdERGIDwtIGNsZWFuREZbLXRyYWluSW5kZXgsIF1cblxuYGBgIn0= -->
+<pre class="r"><code># Apply split indices to DF
+trainDF &lt;- cleanDF[trainIndex, ]
 testDF &lt;- cleanDF[-trainIndex, ]
 </code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIENvcnB1c1xudHJhaW5Db3JwdXMgPC0gY2xlYW5Db3JwdXNbdHJhaW5JbmRleF1cbnRlc3RDb3JwdXMgPC0gY2xlYW5Db3JwdXNbLXRyYWluSW5kZXhdXG5cbmBgYFxuYGBgIn0= --&gt;
-
-```r
-```r
-# Apply split indices to Corpus
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIENvcnB1c1xudHJhaW5Db3JwdXMgPC0gY2xlYW5Db3JwdXNbdHJhaW5JbmRleF1cbnRlc3RDb3JwdXMgPC0gY2xlYW5Db3JwdXNbLXRyYWluSW5kZXhdXG5cbmBgYCJ9 -->
+<pre class="r"><code># Apply split indices to Corpus
 trainCorpus &lt;- cleanCorpus[trainIndex]
 testCorpus &lt;- cleanCorpus[-trainIndex]
 </code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIERUTVxudHJhaW5EVE0gPC0gY2xlYW5EVE1bdHJhaW5JbmRleCwgXVxudGVzdERUTSA8LSBjbGVhbkRUTVstdHJhaW5JbmRleCwgXVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-# Apply split indices to DTM
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIERUTVxudHJhaW5EVE0gPC0gY2xlYW5EVE1bdHJhaW5JbmRleCwgXVxudGVzdERUTSA8LSBjbGVhbkRUTVstdHJhaW5JbmRleCwgXVxuYGBgIn0= -->
+<pre class="r"><code># Apply split indices to DTM
 trainDTM &lt;- cleanDTM[trainIndex, ]
 testDTM &lt;- cleanDTM[-trainIndex, ]</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-Eliminate words with low frequencies
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuZnJlcVdvcmRzIDwtIHRyYWluRFRNICU+JSBmaW5kRnJlcVRlcm1zKDUpXG50cmFpbkRUTSA8LSAgRG9jdW1lbnRUZXJtTWF0cml4KHRyYWluQ29ycHVzLCBsaXN0KGRpY3Rpb25hcnkgPSBmcmVxV29yZHMpKVxudGVzdERUTSA8LSAgRG9jdW1lbnRUZXJtTWF0cml4KHRlc3RDb3JwdXMsIGxpc3QoZGljdGlvbmFyeSA9IGZyZXFXb3JkcykpXG5gYGBcbmBgYCJ9 --&gt;
-
-```r
-```r
-freqWords &lt;- trainDTM %&gt;% findFreqTerms(5)
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Eliminate words with low frequencies</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZnJlcVdvcmRzIDwtIHRyYWluRFRNICU+JSBmaW5kRnJlcVRlcm1zKDEwKVxudHJhaW5EVE0gPC0gIERvY3VtZW50VGVybU1hdHJpeCh0cmFpbkNvcnB1cywgbGlzdChkaWN0aW9uYXJ5ID0gZnJlcVdvcmRzKSlcbnRlc3REVE0gPC0gIERvY3VtZW50VGVybU1hdHJpeCh0ZXN0Q29ycHVzLCBsaXN0KGRpY3Rpb25hcnkgPSBmcmVxV29yZHMpKVxuYGBgIn0= -->
+<pre class="r"><code>freqWords &lt;- trainDTM %&gt;% findFreqTerms(10)
 trainDTM &lt;-  DocumentTermMatrix(trainCorpus, list(dictionary = freqWords))
 testDTM &lt;-  DocumentTermMatrix(testCorpus, list(dictionary = freqWords))</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-We will now transform the numerical matrix of words count into a factor that indicates whether the words appear in the document or not
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuY29udmVydF9jb3VudHMgPC0gZnVuY3Rpb24oeCkge1xuICB4IDwtIGlmZWxzZSh4ID4gMCwgMSwgMCkgJT4lIGZhY3RvcihsZXZlbHMgPSBjKDAsMSksIGxhYmVscyA9IGMoXFxOb1xcLCBcXFllc1xcKSlcbn1cblxubkNvbHNEVE0gPC0gZGltKHRyYWluRFRNKVsyXVxudHJhaW5EVE0gPC0gYXBwbHkodHJhaW5EVE0sIE1BUkdJTiA9IDIsIGNvbnZlcnRfY291bnRzKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-convert_counts &lt;- function(x) {
-  x &lt;- ifelse(x &gt; 0, 1, 0) %&gt;% factor(levels = c(0,1), labels = c(\No\, \Yes\))
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>We will now transform the numerical matrix of words count into a factor that indicates whether the words appear in the document or not</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29udmVydF9jb3VudHMgPC0gZnVuY3Rpb24oeCkge1xuICB4IDwtIGlmZWxzZSh4ID4gMCwgMSwgMCkgJT4lIGZhY3RvcihsZXZlbHMgPSBjKDAsMSksIGxhYmVscyA9IGMoXCJOb1wiLCBcIlllc1wiKSlcbn1cblxubkNvbHNEVE0gPC0gZGltKHRyYWluRFRNKVsyXVxudHJhaW5EVE0gPC0gYXBwbHkodHJhaW5EVE0sIE1BUkdJTiA9IDIsIGNvbnZlcnRfY291bnRzKVxudGVzdERUTSA8LSBhcHBseSh0ZXN0RFRNLCBNQVJHSU4gPSAyLCBjb252ZXJ0X2NvdW50cylcblxuaGVhZCh0cmFpbkRUTVssMToxMF0pXG5gYGAifQ== -->
+<pre class="r"><code>convert_counts &lt;- function(x) {
+  x &lt;- ifelse(x &gt; 0, 1, 0) %&gt;% factor(levels = c(0,1), labels = c(&quot;No&quot;, &quot;Yes&quot;))
 }
 
 nColsDTM &lt;- dim(trainDTM)[2]
-trainDTM &lt;- apply(trainDTM, MARGIN = 2, convert_counts)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
+trainDTM &lt;- apply(trainDTM, MARGIN = 2, convert_counts)
+testDTM &lt;- apply(testDTM, MARGIN = 2, convert_counts)
 
-&lt;!-- rnb-output-begin eyJkYXRhIjoiRXJyb3I6IGNhbm5vdCBhbGxvY2F0ZSB2ZWN0b3Igb2Ygc2l6ZSA0ODYuMiBNYlxuIn0= --&gt;
-</code></pre>
-<p>Error: cannot allocate vector of size 486.2 Mb</p>
-<pre><code>
-
-
-&lt;!-- rnb-output-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-## Modeling
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxubmJheWVzTW9kZWwgPC0gIG5haXZlQmF5ZXModHJhaW5EVE0sIHRyYWluREYkbGFiZWwsIGxhcGxhY2UgPSAxKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-nbayesModel &lt;-  naiveBayes(trainDTM, trainDF$label, laplace = 1)</code></pre>
-<pre><code>
-&lt;!-- rnb-source-end --&gt;
-
-&lt;!-- rnb-chunk-end --&gt;
-
-
-&lt;!-- rnb-text-begin --&gt;
-
-
-
-&lt;!-- rnb-text-end --&gt;
-
-
-&lt;!-- rnb-chunk-begin --&gt;
-
-
-&lt;!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxucHJlZFZlYyA8LSBwcmVkaWN0KG5iYXllc01vZGVsLCB0ZXN0RFRNKVxuY29uZnVzaW9uTWF0cml4KHByZWRWZWMsIHRlc3RERiRsYWJlbCwgcG9zaXRpdmUgPSBcXFVucmVsaWFibGVcXCwgZG5uID0gYyhcXFByZWRpY3Rpb25cXCwgXFxUcnVlXFwpKVxuYGBgXG5gYGAifQ== --&gt;
-
-```r
-```r
-predVec &lt;- predict(nbayesModel, testDTM)
-confusionMatrix(predVec, testDF$label, positive = \Unreliable\, dnn = c(\Prediction\, \True\))</code></pre>
-<p>```</p>
+head(trainDTM[,1:10])</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiICAgIFRlcm1zXG5Eb2NzIGFpZGUgIGNvbWV54oCZcyBkZW0gICBkaWRu4oCZdCBldmVuICBob3VzZSBqYXNvbiBsZXR0ZXIgc2VlICBcbiAgIDEgXCJZZXNcIiBcIlllc1wiICAgXCJZZXNcIiBcIlllc1wiICBcIlllc1wiIFwiWWVzXCIgXCJZZXNcIiBcIlllc1wiICBcIlllc1wiXG4gICAyIFwiTm9cIiAgXCJOb1wiICAgIFwiTm9cIiAgXCJOb1wiICAgXCJOb1wiICBcIk5vXCIgIFwiTm9cIiAgXCJOb1wiICAgXCJOb1wiIFxuICAgMyBcIk5vXCIgIFwiTm9cIiAgICBcIk5vXCIgIFwiTm9cIiAgIFwiTm9cIiAgXCJOb1wiICBcIk5vXCIgIFwiTm9cIiAgIFwiTm9cIiBcbiAgIDQgXCJOb1wiICBcIk5vXCIgICAgXCJOb1wiICBcIk5vXCIgICBcIk5vXCIgIFwiTm9cIiAgXCJOb1wiICBcIk5vXCIgICBcIk5vXCIgXG4gICA1IFwiTm9cIiAgXCJOb1wiICAgIFwiTm9cIiAgXCJOb1wiICAgXCJOb1wiICBcIk5vXCIgIFwiTm9cIiAgXCJOb1wiICAgXCJOb1wiIFxuICAgNiBcIk5vXCIgIFwiTm9cIiAgICBcIk5vXCIgIFwiTm9cIiAgIFwiTm9cIiAgXCJOb1wiICBcIk5vXCIgIFwiTm9cIiAgIFwiTm9cIiBcbiAgICBUZXJtc1xuRG9jcyBiaWcgIFxuICAgMSBcIk5vXCIgXG4gICAyIFwiWWVzXCJcbiAgIDMgXCJOb1wiIFxuICAgNCBcIk5vXCIgXG4gICA1IFwiTm9cIiBcbiAgIDYgXCJOb1wiIFxuIn0= -->
+<pre><code>    Terms
+Docs aide  comey’s dem   didn’t even  house jason letter see  
+   1 &quot;Yes&quot; &quot;Yes&quot;   &quot;Yes&quot; &quot;Yes&quot;  &quot;Yes&quot; &quot;Yes&quot; &quot;Yes&quot; &quot;Yes&quot;  &quot;Yes&quot;
+   2 &quot;No&quot;  &quot;No&quot;    &quot;No&quot;  &quot;No&quot;   &quot;No&quot;  &quot;No&quot;  &quot;No&quot;  &quot;No&quot;   &quot;No&quot; 
+   3 &quot;No&quot;  &quot;No&quot;    &quot;No&quot;  &quot;No&quot;   &quot;No&quot;  &quot;No&quot;  &quot;No&quot;  &quot;No&quot;   &quot;No&quot; 
+   4 &quot;No&quot;  &quot;No&quot;    &quot;No&quot;  &quot;No&quot;   &quot;No&quot;  &quot;No&quot;  &quot;No&quot;  &quot;No&quot;   &quot;No&quot; 
+   5 &quot;No&quot;  &quot;No&quot;    &quot;No&quot;  &quot;No&quot;   &quot;No&quot;  &quot;No&quot;  &quot;No&quot;  &quot;No&quot;   &quot;No&quot; 
+   6 &quot;No&quot;  &quot;No&quot;    &quot;No&quot;  &quot;No&quot;   &quot;No&quot;  &quot;No&quot;  &quot;No&quot;  &quot;No&quot;   &quot;No&quot; 
+    Terms
+Docs big  
+   1 &quot;No&quot; 
+   2 &quot;Yes&quot;
+   3 &quot;No&quot; 
+   4 &quot;No&quot; 
+   5 &quot;No&quot; 
+   6 &quot;No&quot; </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="modeling" class="section level2">
+<h2>Modeling</h2>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubmJheWVzTW9kZWwgPC0gIG5haXZlQmF5ZXModHJhaW5EVE0sIHRyYWluREYkbGFiZWwsIGxhcGxhY2UgPSAxKVxuYGBgIn0= -->
+<pre class="r"><code>nbayesModel &lt;-  naiveBayes(trainDTM, trainDF$label, laplace = 1)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucHJlZFZlYyA8LSBwcmVkaWN0KG5iYXllc01vZGVsLCB0ZXN0RFRNKVxuY29uZnVzaW9uTWF0cml4KHByZWRWZWMsIHRlc3RERiRsYWJlbCwgcG9zaXRpdmUgPSBcIlVucmVsaWFibGVcIiwgZG5uID0gYyhcIlByZWRpY3Rpb25cIiwgXCJUcnVlXCIpKVxuYGBgIn0= -->
+<pre class="r"><code>predVec &lt;- predict(nbayesModel, testDTM)
+confusionMatrix(predVec, testDF$label, positive = &quot;Unreliable&quot;, dnn = c(&quot;Prediction&quot;, &quot;True&quot;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiQ29uZnVzaW9uIE1hdHJpeCBhbmQgU3RhdGlzdGljc1xuXG4gICAgICAgICAgICBUcnVlXG5QcmVkaWN0aW9uICAgUmVsaWFibGUgVW5yZWxpYWJsZVxuICBSZWxpYWJsZSAgICAgICAyMjgxICAgICAgICAgNzRcbiAgVW5yZWxpYWJsZSAgICAgIDMxNSAgICAgICAyMzg5XG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgICAgICAgICAgIEFjY3VyYWN5IDogMC45MjMxICAgICAgICAgIFxuICAgICAgICAgICAgICAgICA5NSUgQ0kgOiAoMC45MTU0LCAwLjkzMDMpXG4gICAgTm8gSW5mb3JtYXRpb24gUmF0ZSA6IDAuNTEzMSAgICAgICAgICBcbiAgICBQLVZhbHVlIFtBY2MgPiBOSVJdIDogPCAyLjJlLTE2ICAgICAgIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICBLYXBwYSA6IDAuODQ2NSAgICAgICAgICBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFxuIE1jbmVtYXIncyBUZXN0IFAtVmFsdWUgOiA8IDIuMmUtMTYgICAgICAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgICAgICAgIFNlbnNpdGl2aXR5IDogMC45NzAwICAgICAgICAgIFxuICAgICAgICAgICAgU3BlY2lmaWNpdHkgOiAwLjg3ODcgICAgICAgICAgXG4gICAgICAgICBQb3MgUHJlZCBWYWx1ZSA6IDAuODgzNSAgICAgICAgICBcbiAgICAgICAgIE5lZyBQcmVkIFZhbHVlIDogMC45Njg2ICAgICAgICAgIFxuICAgICAgICAgICAgIFByZXZhbGVuY2UgOiAwLjQ4NjkgICAgICAgICAgXG4gICAgICAgICBEZXRlY3Rpb24gUmF0ZSA6IDAuNDcyMiAgICAgICAgICBcbiAgIERldGVjdGlvbiBQcmV2YWxlbmNlIDogMC41MzQ1ICAgICAgICAgIFxuICAgICAgQmFsYW5jZWQgQWNjdXJhY3kgOiAwLjkyNDMgICAgICAgICAgXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgICAgICAnUG9zaXRpdmUnIENsYXNzIDogVW5yZWxpYWJsZSAgICAgIFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG4ifQ== -->
+<pre><code>Confusion Matrix and Statistics
+
+            True
+Prediction   Reliable Unreliable
+  Reliable       2281         74
+  Unreliable      315       2389
+                                          
+               Accuracy : 0.9231          
+                 95% CI : (0.9154, 0.9303)
+    No Information Rate : 0.5131          
+    P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+                                          
+                  Kappa : 0.8465          
+                                          
+ Mcnemar&#39;s Test P-Value : &lt; 2.2e-16       
+                                          
+            Sensitivity : 0.9700          
+            Specificity : 0.8787          
+         Pos Pred Value : 0.8835          
+         Neg Pred Value : 0.9686          
+             Prevalence : 0.4869          
+         Detection Rate : 0.4722          
+   Detection Prevalence : 0.5345          
+      Balanced Accuracy : 0.9243          
+                                          
+       &#39;Positive&#39; Class : Unreliable      
+                                          </code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
 <div id="evaluation-and-deployment" class="section level2">
 <h2>Evaluation and Deployment</h2>
-<p>The model has an accuracy rate of 92,3% which is quite a good result.</p>
-<p>reviewer adds suggestions for improving the model</p>
+<p>The model has an accuracy rate of 92,3% which is quite a good result. Also noticed that in some cases the model still wrongly show a headline is reliable whilst it isnt and vice versa.</p>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIkFzc2lnbWVudCAtIE5haXZlIEJheWVzIERJWSINCmF1dGhvcjoNCiAgLSBLb2tvIE5ndXllbiAtIEF1dGhvcg0KICAtIFZ5IE5ndXllbiAtIFJldmlld2VyDQpkYXRlOiAiYHIgZm9ybWF0KFN5cy50aW1lKCksICclZCAlQiwgJVknKWAiDQpvdXRwdXQ6DQogICBodG1sX25vdGVib29rOg0KICAgIHRvYzogdHJ1ZQ0KICAgIHRvY19kZXB0aDogMg0KLS0tDQoNCmBgYHtyfQ0KbGlicmFyeSh0aWR5dmVyc2UpDQpsaWJyYXJ5KHRtKQ0KbGlicmFyeShjYXJldCkNCmxpYnJhcnkod29yZGNsb3VkKQ0KbGlicmFyeShlMTA3MSkNCmBgYA0KLS0tDQoNCg0KIyMgQnVzaW5lc3MgVW5kZXJzdGFuZGluZw0KDQpUaGUgY2hvc2VuIGRhdGFzZXQgZm9yIHRoaXMgTkIgY2xhc3NpZmljYXRpb24gaXMgRmFrZSBOZXdzDQoNCiMjIERhdGEgVW5kZXJzdGFuZGluZw0KYGBge3J9DQp1cmwgPC0gImh0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9IQU4tTTNETS1EYXRhLU1pbmluZy9hc3NpZ25tZW50cy9tYXN0ZXIvZGF0YXNldHMvTkItZmFrZW5ld3MuY3N2Ig0KcmF3REYgPC0gcmVhZF9jc3YodXJsKQ0KaGVhZChyYXdERikNCmBgYA0KDQoNClRoZSBkYXRhc2V0IGhhcyA1IHZhcmlhYmxlcyAoY29sdW1ucykgYW5kIDIwODAwIG9ic2VydmF0aW9ucyAocm93cykNCg0KQWZ0ZXIgcmVhZGluZyB0aGUgZGF0YXNldCwgd2UgZmluZCBvdXQgdGhhdCB2YXJpYWJsZSBJRCwgYXV0aG9yIGFuZCB0ZXh0IGRvIG5vdCBjb250YWluIGFueSByZWxldmFudCBpbmZvcm1hdGlvbiBmb3Igb3VyIHByZWRpY3Rpb24uIEhlbmNlLCB3ZSB3aWxsIHJlbW92ZSBjb2x1bW4gMSwzIGFuZCA0IHdoaWNoIHJlcHJlc2VudCB0aGVzZSBkYXRhLg0KYGBge3J9DQpjbGVhbkRGIDwtIHJhd0RGW2MoLTEsLTMsLTQpXSAlPiUgbmEub21pdA0KaGVhZChjbGVhbkRGKQ0KYGBgDQoNCg0KVGhlIHZhcmlhYmxlIGxhYmVsIGlzIG51bWVyaWMgdmFsdWUgd2l0aCAwOiByZWxpYWJsZSBhbmQgMTogdW5yZWxpYWJsZS4gQXMgaXQgaW5kaWNhdGVzIHdoZXRoZXIgdGhlIHRpdHRsZSBiZWxvbmdzIHRvIHRoZSBjYXRlZ29yeSAiUmVsaWFibGUiIG9yICJVbnJlbGlhYmxlIiwgd2Ugd2lsbCBjb252ZXJ0IGl0IGludG8gYSBmYWN0b3IgdmFyaWFibGUuDQpgYGB7cn0NCmNsZWFuREYkbGFiZWwgPC0gZmFjdG9yKGNsZWFuREYkbGFiZWwsIGxldmVscyA9IGMoIjAiLCAiMSIpLCBsYWJlbHMgPSBjKCJSZWxpYWJsZSIsICJVbnJlbGlhYmxlIikpICU+JSByZWxldmVsKCJSZWxpYWJsZSIpDQpjbGFzcyhjbGVhbkRGJGxhYmVsKQ0KYGBgDQoNCkZvciB2aXN1YWxseSBpbnNwZWN0LCB3ZSBjcmVhdGUgYSB3b3JkY2xvdWQgZm9yIHR3byB2YXJpYWJsZXMuIA0KDQpgYGB7cn0NClVucmVsaWFibGUgPC0gY2xlYW5ERiAlPiUgZmlsdGVyKGxhYmVsID09ICJVbnJlbGlhYmxlIikNClJlbGlhYmxlIDwtIGNsZWFuREYgJT4lIGZpbHRlcihsYWJlbCA9PSAiUmVsaWFibGUiKQ0KDQp3b3JkY2xvdWQoVW5yZWxpYWJsZSR0aXRsZSwgbWF4LndvcmRzID0gMjAsIHNjYWxlID0gYyg0LCAwLjgpLCBjb2xvcnM9IGMoImluZGlhbnJlZDEiLCJpbmRpYW5yZWQyIiwiaW5kaWFucmVkMyIsImluZGlhbnJlZCIpKQ0Kd29yZGNsb3VkKFJlbGlhYmxlJHRpdGxlLCBtYXgud29yZHMgPSAyMCwgc2NhbGUgPSBjKDQsIDAuOCksIGNvbG9ycz0gYygibGlnaHRzdGVlbGJsdWUxIiwibGlnaHRzdGVlbGJsdWUyIiwibGlnaHRzdGVlbGJsdWUzIiwibGlnaHRzdGVlbGJsdWUiKSkNCmBgYA0KVGhlcmUgaXMgbm8gc2lnbmlmaWNhbnQgZGlmZmVyZW5jZSBiZXR3ZWVuIHRoZSBudW1iZXIgb2YgcmVsaWFibGUgdnMgdW5yZWxpYWJsZSBhcnRpY2xlcyByZWxlYXNlZC4gQmFzZWQgb24gdGhlIHdvcmRjbG91ZHMsIGl0IGlzIGxpa2VseSB0aGF0IHRoZSBuYW1lIG9mIGZvcm1lciBVUyBwcmVzaWRlbnQgaGlzIHJpdmFsIGluIHRoZSAyMDE2IGVsZWN0aW9uIHdvdWxkIHRha2UgcGxhY2UgaW4gbWFueSB1bnJlbGlhYmxlIHRpdGxlcy4gV2hpbGUgaW4gdGhlIHJlbGlhYmxlIHNpZGUsICJuZXciLCJ5b3JrIiBhbmQgInRpbWVzIiBhbHNvIGFwcGVhcmVkIHRvIGJlIG1lbnRpb25lZCBtdWx0aXBsZSB0aW1lcy4NCg0KDQojIyBEYXRhIFByZXBhcmF0aW9uDQoNCldlIGNyZWF0ZSBhIGNvcnB1cyBhaW1zIHRvIHJlZmVyIHRvIGEgY29sbGVjdGlvbiBvZiB0ZXh0IGRvY3VtZW50DQpgYGB7cn0NCnJhd0NvcnB1cyA8LSBDb3JwdXMoVmVjdG9yU291cmNlKGNsZWFuREYkdGl0bGUpKQ0KaW5zcGVjdChyYXdDb3JwdXNbMTozXSkNCmBgYA0KVGhlIGNvcnB1cyBjb250YWlucyAyMDI0MiBlbGVtZW50cyB3aGljaCBtYXRjaGVzIHdpdGggdGhlIG51bWJlciBvZiByb3dzIGluIG91ciBkYXRhc2V0Lg0KV2Ugd2lsbCBhbHNvIGNoYW5nZSBldmVyeXRoaW5nIHRvIGxvd2VyY2FzZSBhbmQgcmVtb3ZlIG51bWJlcnMgYXMgdGhlc2Ugd2lsbCBjb250YWluIGxpdGxlIGluZm9ybWF0aW9uIG9uIHdoZXRoZXIgYW4gYXJ0aWNsZSBpcyByZWxpYWJsZSBvciBub3QNCg0KYGBge3J9DQpjbGVhbkNvcnB1cyA8LSByYXdDb3JwdXMgJT4lIHRtX21hcCh0b2xvd2VyKSAlPiUgdG1fbWFwKHJlbW92ZU51bWJlcnMpDQppbnNwZWN0KGNsZWFuQ29ycHVzWzE6M10pDQpgYGANCldlIGFsc28gcmVtb3ZlIHN0b3B3b3JkcywgcHVuY3R1YXRpb24gYW5kIHdoaXRlc3BhY2VzDQoNCmBgYHtyfQ0KY2xlYW5Db3JwdXMgPC0gY2xlYW5Db3JwdXMgJT4lIHRtX21hcCh0b2xvd2VyKSAlPiUgdG1fbWFwKHJlbW92ZVdvcmRzLCBzdG9wd29yZHMoKSkgJT4lIHRtX21hcChyZW1vdmVQdW5jdHVhdGlvbikNCmluc3BlY3QoY2xlYW5Db3JwdXNbMTozXSkNCmBgYA0KUmVtb3ZlIGFkZGl0aW9uYWwgd2hpdGVzcGFjZQ0KDQpgYGB7cn0NCmNsZWFuQ29ycHVzIDwtIGNsZWFuQ29ycHVzICU+JSB0bV9tYXAoc3RyaXBXaGl0ZXNwYWNlKQ0KaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKQ0KYGBgDQpDb21wYXJlIHdpdGggdGhlIHJhdyB2ZXJzaW9uDQoNCmBgYHtyfQ0KdGliYmxlKFJhdyA9IHJhd0NvcnB1cyRjb250ZW50WzE6M10sIENsZWFuID0gY2xlYW5Db3JwdXMkY29udGVudFsxOjNdKQ0KYGBgDQoNCkFmdGVyIGNsZWFuaW5nIHVwIHRoZSB0ZXh0LCB3ZSB0cmFuc2Zvcm0gdGhlIG1lc3NhZ2VzIHRvIGEgbWF0cml4IA0KDQpgYGB7cn0NCmNsZWFuRFRNIDwtIGNsZWFuQ29ycHVzICU+JSBEb2N1bWVudFRlcm1NYXRyaXgNCmluc3BlY3QoY2xlYW5EVE0pDQpgYGANCkRhdGFzZXQgd2lsbCBiZSBzcGxpdHRlZCBpbnRvIHRyYWluIGFuZCB0ZXN0IHNldHMNCg0KYGBge3J9DQojIENyZWF0ZSBzcGxpdCBpbmRpY2VzDQpzZXQuc2VlZCgxMjM0KQ0KdHJhaW5JbmRleCA8LSBjcmVhdGVEYXRhUGFydGl0aW9uKGNsZWFuREYkbGFiZWwsIHAgPSAuNzUsIA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIGxpc3QgPSBGQUxTRSwgDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdGltZXMgPSAxKQ0KaGVhZCh0cmFpbkluZGV4KQ0KYGBgDQoNCg0KDQpgYGB7cn0NCiMgQXBwbHkgc3BsaXQgaW5kaWNlcyB0byBERg0KdHJhaW5ERiA8LSBjbGVhbkRGW3RyYWluSW5kZXgsIF0NCnRlc3RERiA8LSBjbGVhbkRGWy10cmFpbkluZGV4LCBdDQoNCmBgYA0KYGBge3J9DQojIEFwcGx5IHNwbGl0IGluZGljZXMgdG8gQ29ycHVzDQp0cmFpbkNvcnB1cyA8LSBjbGVhbkNvcnB1c1t0cmFpbkluZGV4XQ0KdGVzdENvcnB1cyA8LSBjbGVhbkNvcnB1c1stdHJhaW5JbmRleF0NCg0KYGBgDQoNCmBgYHtyfQ0KIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIERUTQ0KdHJhaW5EVE0gPC0gY2xlYW5EVE1bdHJhaW5JbmRleCwgXQ0KdGVzdERUTSA8LSBjbGVhbkRUTVstdHJhaW5JbmRleCwgXQ0KYGBgDQoNCkVsaW1pbmF0ZSB3b3JkcyB3aXRoIGxvdyBmcmVxdWVuY2llcw0KDQpgYGB7cn0NCmZyZXFXb3JkcyA8LSB0cmFpbkRUTSAlPiUgZmluZEZyZXFUZXJtcygxMCkNCnRyYWluRFRNIDwtICBEb2N1bWVudFRlcm1NYXRyaXgodHJhaW5Db3JwdXMsIGxpc3QoZGljdGlvbmFyeSA9IGZyZXFXb3JkcykpDQp0ZXN0RFRNIDwtICBEb2N1bWVudFRlcm1NYXRyaXgodGVzdENvcnB1cywgbGlzdChkaWN0aW9uYXJ5ID0gZnJlcVdvcmRzKSkNCmBgYA0KDQpXZSB3aWxsIG5vdyB0cmFuc2Zvcm0gdGhlIG51bWVyaWNhbCBtYXRyaXggb2Ygd29yZHMgY291bnQgaW50byBhIGZhY3RvciB0aGF0IGluZGljYXRlcyB3aGV0aGVyIHRoZSB3b3JkcyBhcHBlYXIgaW4gdGhlIGRvY3VtZW50IG9yIG5vdA0KDQpgYGB7cn0NCmNvbnZlcnRfY291bnRzIDwtIGZ1bmN0aW9uKHgpIHsNCiAgeCA8LSBpZmVsc2UoeCA+IDAsIDEsIDApICU+JSBmYWN0b3IobGV2ZWxzID0gYygwLDEpLCBsYWJlbHMgPSBjKCJObyIsICJZZXMiKSkNCn0NCg0KbkNvbHNEVE0gPC0gZGltKHRyYWluRFRNKVsyXQ0KdHJhaW5EVE0gPC0gYXBwbHkodHJhaW5EVE0sIE1BUkdJTiA9IDIsIGNvbnZlcnRfY291bnRzKQ0KdGVzdERUTSA8LSBhcHBseSh0ZXN0RFRNLCBNQVJHSU4gPSAyLCBjb252ZXJ0X2NvdW50cykNCg0KaGVhZCh0cmFpbkRUTVssMToxMF0pDQpgYGANCg0KDQojIyBNb2RlbGluZw0KDQpgYGB7cn0NCm5iYXllc01vZGVsIDwtICBuYWl2ZUJheWVzKHRyYWluRFRNLCB0cmFpbkRGJGxhYmVsLCBsYXBsYWNlID0gMSkNCmBgYA0KDQpgYGB7cn0NCnByZWRWZWMgPC0gcHJlZGljdChuYmF5ZXNNb2RlbCwgdGVzdERUTSkNCmNvbmZ1c2lvbk1hdHJpeChwcmVkVmVjLCB0ZXN0REYkbGFiZWwsIHBvc2l0aXZlID0gIlVucmVsaWFibGUiLCBkbm4gPSBjKCJQcmVkaWN0aW9uIiwgIlRydWUiKSkNCmBgYA0KDQojIyBFdmFsdWF0aW9uIGFuZCBEZXBsb3ltZW50DQpUaGUgbW9kZWwgaGFzIGFuIGFjY3VyYWN5IHJhdGUgb2YgOTIsMyUgd2hpY2ggaXMgcXVpdGUgYSBnb29kIHJlc3VsdC4gIA0KDQpyZXZpZXdlciBhZGRzIHN1Z2dlc3Rpb25zIGZvciBpbXByb3ZpbmcgdGhlIG1vZGVs</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIkFzc2lnbWVudCAtIE5haXZlIEJheWVzIERJWSINCmF1dGhvcjoNCiAgLSBLb2tvIE5ndXllbiAtIEF1dGhvcg0KICAtIFZ5IE5ndXllbiAtIFJldmlld2VyDQpkYXRlOiAiYHIgZm9ybWF0KFN5cy50aW1lKCksICclZCAlQiwgJVknKWAiDQpvdXRwdXQ6DQogICBodG1sX25vdGVib29rOg0KICAgIHRvYzogdHJ1ZQ0KICAgIHRvY19kZXB0aDogMg0KLS0tDQoNCmBgYHtyfQ0KbGlicmFyeSh0aWR5dmVyc2UpDQpsaWJyYXJ5KHRtKQ0KbGlicmFyeShjYXJldCkNCmxpYnJhcnkod29yZGNsb3VkKQ0KbGlicmFyeShlMTA3MSkNCmBgYA0KLS0tDQoNCiMjIEJ1c2luZXNzIFVuZGVyc3RhbmRpbmcNCg0KVGhlIGNob3NlbiBkYXRhc2V0IGZvciB0aGlzIHRlc3RpbmcgaXMgdGhlIEZha2UgTmV3cy4gVGhpcyBkYXRhc2V0IGluZGljYXRpbmcgc291cmNlcyB0aGF0IGFyZSByZWxpYWJsZSBvciB1bnJlbGlhYmxlLkkgd2lsbCB1c2UgTmFpdmUgQmF5ZXMgQ2xhc3NpZmVyIHRvIGlkZW50aWZ5IHdoaWNoIGlzIGZha2UgbmV3cyBhbmQgd2hpY2ggaXNuJ3QuIEkgd2lsbCBjb3VudCB0aGUgYW1vdW50IG9mIHRpbWUgYSB3b3JkIGFwcGVhcnMgaW4gYSBoZWFkbGluZSAtIHRha2luZyB0aGF0IHRoaXMgaGVhZGxpbmUgaXMgZnJvbSBhIGZha2UgbmV3cy5UaGVuIGFmdGVyd2FyZHMgZmluZCBvdXQgdGhlIHByb2JhYmlsaXR5IHRoYXQgdGhlIGhlYWRsaW5lIGlzIGZha2UsICBjb21wYXJlIHRvIGEgcmVhbCBvbmUuIA0KDQojIyBEYXRhIFVuZGVyc3RhbmRpbmcNCmBgYHtyfQ0KdXJsIDwtICJodHRwczovL3Jhdy5naXRodWJ1c2VyY29udGVudC5jb20vSEFOLU0zRE0tRGF0YS1NaW5pbmcvYXNzaWdubWVudHMvbWFzdGVyL2RhdGFzZXRzL05CLWZha2VuZXdzLmNzdiINCnJhd0RGIDwtIHJlYWRfY3N2KHVybCkNCmhlYWQocmF3REYpDQpgYGANCg0KDQpUaGUgZGF0YXNldCBoYXMgNSB2YXJpYWJsZXMgKGNvbHVtbnMpIGFuZCAyMDgwMCBvYnNlcnZhdGlvbnMgKHJvd3MpDQoNCkFmdGVyIHJlYWRpbmcgdGhlIGRhdGFzZXQsIHdlIGZpbmQgb3V0IHRoYXQgdmFyaWFibGUgSUQsIGF1dGhvciBhbmQgdGV4dCBkbyBub3QgY29udGFpbiBhbnkgcmVsZXZhbnQgaW5mb3JtYXRpb24gZm9yIG91ciBwcmVkaWN0aW9uLiBIZW5jZSwgd2Ugd2lsbCByZW1vdmUgY29sdW1uIDEsMyBhbmQgNCB3aGljaCByZXByZXNlbnQgdGhlc2UgZGF0YS4NCg0KYGBge3J9DQpjbGVhbkRGIDwtIHJhd0RGW2MoLTEsLTMsLTQpXSAlPiUgbmEub21pdA0KaGVhZChjbGVhbkRGKQ0KYGBgDQoNCg0KVGhlIHZhcmlhYmxlIGxhYmVsIGlzIG51bWVyaWMgdmFsdWUgd2l0aCAwOiByZWxpYWJsZSBhbmQgMTogdW5yZWxpYWJsZS4gQXMgaXQgaW5kaWNhdGVzIHdoZXRoZXIgdGhlIHRpdHRsZSBiZWxvbmdzIHRvIHRoZSBjYXRlZ29yeSAiUmVsaWFibGUiIG9yICJVbnJlbGlhYmxlIiwgd2Ugd2lsbCBjb252ZXJ0IGl0IGludG8gYSBmYWN0b3IgdmFyaWFibGUuDQoNCmBgYHtyfQ0KY2xlYW5ERiRsYWJlbCA8LSBmYWN0b3IoY2xlYW5ERiRsYWJlbCwgbGV2ZWxzID0gYygiMCIsICIxIiksIGxhYmVscyA9IGMoIlJlbGlhYmxlIiwgIlVucmVsaWFibGUiKSkgJT4lIHJlbGV2ZWwoIlJlbGlhYmxlIikNCmNsYXNzKGNsZWFuREYkbGFiZWwpDQpgYGANCg0KRm9yIHZpc3VhbGx5IGluc3BlY3QsIHdlIGNyZWF0ZSBhIHdvcmRjbG91ZCBmb3IgdHdvIHZhcmlhYmxlcy4gDQoNCmBgYHtyfQ0KVW5yZWxpYWJsZSA8LSBjbGVhbkRGICU+JSBmaWx0ZXIobGFiZWwgPT0gIlVucmVsaWFibGUiKQ0KUmVsaWFibGUgPC0gY2xlYW5ERiAlPiUgZmlsdGVyKGxhYmVsID09ICJSZWxpYWJsZSIpDQoNCndvcmRjbG91ZChVbnJlbGlhYmxlJHRpdGxlLCBtYXgud29yZHMgPSAyMCwgc2NhbGUgPSBjKDQsIDAuOCksIGNvbG9ycz0gYygiaW5kaWFucmVkMSIsImluZGlhbnJlZDIiLCJpbmRpYW5yZWQzIiwiaW5kaWFucmVkIikpDQp3b3JkY2xvdWQoUmVsaWFibGUkdGl0bGUsIG1heC53b3JkcyA9IDIwLCBzY2FsZSA9IGMoNCwgMC44KSwgY29sb3JzPSBjKCJsaWdodHN0ZWVsYmx1ZTEiLCJsaWdodHN0ZWVsYmx1ZTIiLCJsaWdodHN0ZWVsYmx1ZTMiLCJsaWdodHN0ZWVsYmx1ZSIpKQ0KYGBgDQpUaGVyZSBpcyBubyBzaWduaWZpY2FudCBkaWZmZXJlbmNlIGJldHdlZW4gdGhlIG51bWJlciBvZiByZWxpYWJsZSB2cyB1bnJlbGlhYmxlIGFydGljbGVzIHJlbGVhc2VkLiBCYXNlZCBvbiB0aGUgd29yZGNsb3VkcywgaXQgaXMgbGlrZWx5IHRoYXQgdGhlIG5hbWUgb2YgZm9ybWVyIFVTIHByZXNpZGVudCBoaXMgcml2YWwgaW4gdGhlIDIwMTYgZWxlY3Rpb24gd291bGQgdGFrZSBwbGFjZSBpbiBtYW55IHVucmVsaWFibGUgdGl0bGVzLiBXaGlsZSBpbiB0aGUgcmVsaWFibGUgc2lkZSwgIm5ldyIsInlvcmsiIGFuZCAidGltZXMiIGFsc28gYXBwZWFyZWQgdG8gYmUgbWVudGlvbmVkIG11bHRpcGxlIHRpbWVzLg0KDQoNCiMjIERhdGEgUHJlcGFyYXRpb24NCg0KV2UgY3JlYXRlIGEgY29ycHVzIGFpbXMgdG8gcmVmZXIgdG8gYSBjb2xsZWN0aW9uIG9mIHRleHQgZG9jdW1lbnQNCmBgYHtyfQ0KcmF3Q29ycHVzIDwtIENvcnB1cyhWZWN0b3JTb3VyY2UoY2xlYW5ERiR0aXRsZSkpDQppbnNwZWN0KHJhd0NvcnB1c1sxOjNdKQ0KYGBgDQpUaGUgY29ycHVzIGNvbnRhaW5zIDIwMjQyIGVsZW1lbnRzIHdoaWNoIG1hdGNoZXMgd2l0aCB0aGUgbnVtYmVyIG9mIHJvd3MgaW4gb3VyIGRhdGFzZXQuDQpXZSB3aWxsIGFsc28gY2hhbmdlIGV2ZXJ5dGhpbmcgdG8gbG93ZXJjYXNlIGFuZCByZW1vdmUgbnVtYmVycyBhcyB0aGVzZSB3aWxsIGNvbnRhaW4gbGl0bGUgaW5mb3JtYXRpb24gb24gd2hldGhlciBhbiBhcnRpY2xlIGlzIHJlbGlhYmxlIG9yIG5vdA0KDQpgYGB7cn0NCmNsZWFuQ29ycHVzIDwtIHJhd0NvcnB1cyAlPiUgdG1fbWFwKHRvbG93ZXIpICU+JSB0bV9tYXAocmVtb3ZlTnVtYmVycykNCmluc3BlY3QoY2xlYW5Db3JwdXNbMTozXSkNCmBgYA0KV2UgYWxzbyByZW1vdmUgc3RvcHdvcmRzLCBwdW5jdHVhdGlvbiBhbmQgd2hpdGVzcGFjZXMNCg0KYGBge3J9DQpjbGVhbkNvcnB1cyA8LSBjbGVhbkNvcnB1cyAlPiUgdG1fbWFwKHRvbG93ZXIpICU+JSB0bV9tYXAocmVtb3ZlV29yZHMsIHN0b3B3b3JkcygpKSAlPiUgdG1fbWFwKHJlbW92ZVB1bmN0dWF0aW9uKQ0KaW5zcGVjdChjbGVhbkNvcnB1c1sxOjNdKQ0KYGBgDQpSZW1vdmUgYWRkaXRpb25hbCB3aGl0ZXNwYWNlDQoNCmBgYHtyfQ0KY2xlYW5Db3JwdXMgPC0gY2xlYW5Db3JwdXMgJT4lIHRtX21hcChzdHJpcFdoaXRlc3BhY2UpDQppbnNwZWN0KGNsZWFuQ29ycHVzWzE6M10pDQpgYGANCkNvbXBhcmUgd2l0aCB0aGUgcmF3IHZlcnNpb24NCg0KYGBge3J9DQp0aWJibGUoUmF3ID0gcmF3Q29ycHVzJGNvbnRlbnRbMTozXSwgQ2xlYW4gPSBjbGVhbkNvcnB1cyRjb250ZW50WzE6M10pDQpgYGANCg0KQWZ0ZXIgY2xlYW5pbmcgdXAgdGhlIHRleHQsIHdlIHRyYW5zZm9ybSB0aGUgbWVzc2FnZXMgdG8gYSBtYXRyaXggDQoNCmBgYHtyfQ0KY2xlYW5EVE0gPC0gY2xlYW5Db3JwdXMgJT4lIERvY3VtZW50VGVybU1hdHJpeA0KaW5zcGVjdChjbGVhbkRUTSkNCmBgYA0KRGF0YXNldCB3aWxsIGJlIHNwbGl0dGVkIGludG8gdHJhaW4gYW5kIHRlc3Qgc2V0cw0KDQpgYGB7cn0NCiMgQ3JlYXRlIHNwbGl0IGluZGljZXMNCnNldC5zZWVkKDEyMzQpDQp0cmFpbkluZGV4IDwtIGNyZWF0ZURhdGFQYXJ0aXRpb24oY2xlYW5ERiRsYWJlbCwgcCA9IC43NSwgDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgbGlzdCA9IEZBTFNFLCANCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB0aW1lcyA9IDEpDQpoZWFkKHRyYWluSW5kZXgpDQpgYGANCg0KDQoNCmBgYHtyfQ0KIyBBcHBseSBzcGxpdCBpbmRpY2VzIHRvIERGDQp0cmFpbkRGIDwtIGNsZWFuREZbdHJhaW5JbmRleCwgXQ0KdGVzdERGIDwtIGNsZWFuREZbLXRyYWluSW5kZXgsIF0NCg0KYGBgDQpgYGB7cn0NCiMgQXBwbHkgc3BsaXQgaW5kaWNlcyB0byBDb3JwdXMNCnRyYWluQ29ycHVzIDwtIGNsZWFuQ29ycHVzW3RyYWluSW5kZXhdDQp0ZXN0Q29ycHVzIDwtIGNsZWFuQ29ycHVzWy10cmFpbkluZGV4XQ0KDQpgYGANCg0KYGBge3J9DQojIEFwcGx5IHNwbGl0IGluZGljZXMgdG8gRFRNDQp0cmFpbkRUTSA8LSBjbGVhbkRUTVt0cmFpbkluZGV4LCBdDQp0ZXN0RFRNIDwtIGNsZWFuRFRNWy10cmFpbkluZGV4LCBdDQpgYGANCg0KRWxpbWluYXRlIHdvcmRzIHdpdGggbG93IGZyZXF1ZW5jaWVzDQoNCmBgYHtyfQ0KZnJlcVdvcmRzIDwtIHRyYWluRFRNICU+JSBmaW5kRnJlcVRlcm1zKDEwKQ0KdHJhaW5EVE0gPC0gIERvY3VtZW50VGVybU1hdHJpeCh0cmFpbkNvcnB1cywgbGlzdChkaWN0aW9uYXJ5ID0gZnJlcVdvcmRzKSkNCnRlc3REVE0gPC0gIERvY3VtZW50VGVybU1hdHJpeCh0ZXN0Q29ycHVzLCBsaXN0KGRpY3Rpb25hcnkgPSBmcmVxV29yZHMpKQ0KYGBgDQoNCldlIHdpbGwgbm93IHRyYW5zZm9ybSB0aGUgbnVtZXJpY2FsIG1hdHJpeCBvZiB3b3JkcyBjb3VudCBpbnRvIGEgZmFjdG9yIHRoYXQgaW5kaWNhdGVzIHdoZXRoZXIgdGhlIHdvcmRzIGFwcGVhciBpbiB0aGUgZG9jdW1lbnQgb3Igbm90DQoNCmBgYHtyfQ0KY29udmVydF9jb3VudHMgPC0gZnVuY3Rpb24oeCkgew0KICB4IDwtIGlmZWxzZSh4ID4gMCwgMSwgMCkgJT4lIGZhY3RvcihsZXZlbHMgPSBjKDAsMSksIGxhYmVscyA9IGMoIk5vIiwgIlllcyIpKQ0KfQ0KDQpuQ29sc0RUTSA8LSBkaW0odHJhaW5EVE0pWzJdDQp0cmFpbkRUTSA8LSBhcHBseSh0cmFpbkRUTSwgTUFSR0lOID0gMiwgY29udmVydF9jb3VudHMpDQp0ZXN0RFRNIDwtIGFwcGx5KHRlc3REVE0sIE1BUkdJTiA9IDIsIGNvbnZlcnRfY291bnRzKQ0KDQpoZWFkKHRyYWluRFRNWywxOjEwXSkNCmBgYA0KDQoNCiMjIE1vZGVsaW5nDQoNCmBgYHtyfQ0KbmJheWVzTW9kZWwgPC0gIG5haXZlQmF5ZXModHJhaW5EVE0sIHRyYWluREYkbGFiZWwsIGxhcGxhY2UgPSAxKQ0KYGBgDQoNCmBgYHtyfQ0KcHJlZFZlYyA8LSBwcmVkaWN0KG5iYXllc01vZGVsLCB0ZXN0RFRNKQ0KY29uZnVzaW9uTWF0cml4KHByZWRWZWMsIHRlc3RERiRsYWJlbCwgcG9zaXRpdmUgPSAiVW5yZWxpYWJsZSIsIGRubiA9IGMoIlByZWRpY3Rpb24iLCAiVHJ1ZSIpKQ0KYGBgDQoNCiMjIEV2YWx1YXRpb24gYW5kIERlcGxveW1lbnQNClRoZSBtb2RlbCBoYXMgYW4gYWNjdXJhY3kgcmF0ZSBvZiA5MiwzJSB3aGljaCBpcyBxdWl0ZSBhIGdvb2QgcmVzdWx0LiBBbHNvIG5vdGljZWQgdGhhdCBpbiBzb21lIGNhc2VzIHRoZSBtb2RlbCBzdGlsbCB3cm9uZ2x5IHNob3cgYSBoZWFkbGluZSBpcyByZWxpYWJsZSB3aGlsc3QgaXQgaXNudCBhbmQgdmljZSB2ZXJzYS4NCg0K</div>
 
 
 

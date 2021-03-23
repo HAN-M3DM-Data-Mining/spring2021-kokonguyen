@@ -19,10 +19,9 @@ library(e1071)
 ```
 ---
 
-
 ## Business Understanding
 
-The chosen dataset for this NB classification is Fake News
+The chosen dataset for this testing is the Fake News. This dataset indicating sources that are reliable or unreliable.I will use Naive Bayes Classifer to identify which is fake news and which isn't. I will count the amount of time a word appears in a headline - taking that this headline is from a fake news.Then afterwards find out the probability that the headline is fake,  compare to a real one. 
 
 ## Data Understanding
 ```{r}
@@ -35,6 +34,7 @@ head(rawDF)
 The dataset has 5 variables (columns) and 20800 observations (rows)
 
 After reading the dataset, we find out that variable ID, author and text do not contain any relevant information for our prediction. Hence, we will remove column 1,3 and 4 which represent these data.
+
 ```{r}
 cleanDF <- rawDF[c(-1,-3,-4)] %>% na.omit
 head(cleanDF)
@@ -42,6 +42,7 @@ head(cleanDF)
 
 
 The variable label is numeric value with 0: reliable and 1: unreliable. As it indicates whether the tittle belongs to the category "Reliable" or "Unreliable", we will convert it into a factor variable.
+
 ```{r}
 cleanDF$label <- factor(cleanDF$label, levels = c("0", "1"), labels = c("Reliable", "Unreliable")) %>% relevel("Reliable")
 class(cleanDF$label)
@@ -164,6 +165,5 @@ confusionMatrix(predVec, testDF$label, positive = "Unreliable", dnn = c("Predict
 ```
 
 ## Evaluation and Deployment
-The model has an accuracy rate of 92,3% which is quite a good result.  
+The model has an accuracy rate of 92,3% which is quite a good result. Also noticed that in some cases the model still wrongly show a headline is reliable whilst it isnt and vice versa.
 
-reviewer adds suggestions for improving the model
